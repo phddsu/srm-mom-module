@@ -1,0 +1,41 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: srm-mom-module
+
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:srm_mom_prod}
+    username: ${DB_USER:postgres}
+    password: ${DB_PASSWORD:postgres}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: false
+
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    locations: classpath:db/migration
+
+  servlet:
+    multipart:
+      max-file-size: 15MB
+      max-request-size: 15MB
+
+jwt:
+  secret: c3JtLXBoZC1tb20tc2VjcmV0LWtleS1mb3Itand0LXNpZ25pbmctMjAyNi1tdXN0LWJlLWxvbmdlci10aGFuLTI1Ni1iaXRz
+  expiration-ms: 86400000
+
+logging:
+  level:
+    root: INFO
+    com.srm.phd.mom: INFO
+    org.springframework.security: INFO

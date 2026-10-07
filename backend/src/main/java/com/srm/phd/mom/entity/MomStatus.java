@@ -1,0 +1,14 @@
+package com.srm.phd.mom.entity;
+
+public enum MomStatus {
+    DRAFT,
+    SUBMITTED,
+    GUIDE_RECOMMENDED,
+    GUIDE_RETURNED,
+    COORDINATOR_RECOMMENDED,
+    COORDINATOR_RETURNED,
+    HOI_RECOMMENDED,
+    HOI_RETURNED,
+    DEAN_APPROVED,
+    DEAN_REJECTED
+}

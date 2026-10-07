@@ -1,0 +1,40 @@
+# ===== Node / Frontend =====
+node_modules/
+dist/
+.vite/
+*.log
+npm-debug.log*
+.env
+.env.local
+
+# ===== Java / Maven / Backend =====
+target/
+*.class
+*.jar
+!.mvn/wrapper/maven-wrapper.jar
+mvnw.cmd
+mvnw
+
+# ===== Uploads =====
+backend/uploads/
+uploads/
+
+# ===== IDE =====
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+.settings/
+.project
+.classpath
+
+# ===== OS =====
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ===== Secrets =====
+*.env
+application-local.yml
+application-local.properties
