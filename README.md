@@ -1,85 +1,175 @@
 # SRM PhD - Minutes of Meeting (MoM) Module
 
-A full-stack web application for SRM Institute of Science and Technology to digitize the Monthly Progress Review of full-time PhD scholars.
+Step-by-step guide to run the application on a fresh Windows system.
 
-## Features
+Repository: https://github.com/phddsu/srm-mom-module
 
-- 5-role approval workflow: Scholar -> Supervisor -> Institutional Research Coordinator -> Head of Institute -> Dean Research
-- Scholar form with Sections A-G (Scholar Details, Research Work, Milestones, Throughputs, Skills, Challenges, Teaching Assistantship) + Leave Requests
-- Proof attachment per row (PDF/JPG/PNG/DOCX, max 10 MB)
-- Typed-name digital signature by every role
-- In-app notifications with unread badge
-- PDF generation with SRM logo + all sections + signature blocks (Dean only)
-- Audit trail of every action
+---
 
-## Tech Stack
+## HOW TO VIEW THIS README ON GITHUB
 
-| Layer | Tech |
-|---|---|
-| Backend | Spring Boot 3.2.5, Java 17, PostgreSQL 16, Flyway, JWT, iText 8 |
-| Frontend | React 18 + Vite + TypeScript + Tailwind CSS |
-| Database | PostgreSQL (port 5432 by default) |
+1. Open browser
+2. Go to https://github.com/phddsu/srm-mom-module
+3. Scroll down — the README is shown below the file list
 
-## Prerequisites
+---
 
-- Java 17 or higher
-- Maven 3.9+
-- Node.js 18+ and npm
-- PostgreSQL 14+ running on localhost:5432
+## STEP 1 — Install prerequisites (one time only)
 
-## Setup
+Install these four tools on your Windows system:
 
-### 1. Clone the repository
+### 1.1 Java JDK 17
 
-    git clone https://github.com/YOUR-USERNAME/srm-mom-module.git
+Download from: https://adoptium.net/temurin/releases/?version=17
+Run the installer. Use all default options.
+
+### 1.2 Apache Maven
+
+Download from: https://maven.apache.org/download.cgi
+Choose the "Binary zip archive". Unzip it to `C:\Program Files\Apache\maven`.
+Add `C:\Program Files\Apache\maven\bin` to your System PATH.
+
+How to add to PATH:
+- Press Windows key, type "environment variables"
+- Click "Edit the system environment variables"
+- Click "Environment Variables"
+- Under "System variables", select "Path", click "Edit"
+- Click "New", paste `C:\Program Files\Apache\maven\bin`
+- Click OK three times
+
+### 1.3 Node.js 18 or higher
+
+Download from: https://nodejs.org
+Run the installer. Use all default options.
+
+### 1.4 PostgreSQL 14 or higher
+
+Download from: https://www.postgresql.org/download/windows/
+Run the installer. When it asks for a password, SET A PASSWORD and write it down.
+Use the default port 5432.
+
+### 1.5 Git
+
+Download from: https://git-scm.com/download/win
+Run the installer. Use all default options.
+
+---
+
+## STEP 2 — Verify installations
+
+Open a NEW PowerShell window (press Windows key, type "powershell", press Enter).
+
+Run these one by one. Each should print a version number.
+
+    java -version
+
+    mvn -version
+
+    node -v
+
+    npm -v
+
+    git --version
+
+If any command says "not recognized", re-install that tool.
+
+---
+
+## STEP 3 — Clone the repository
+
+In the same PowerShell window, run:
+
+    cd C:\
+
+    git clone https://github.com/phddsu/srm-mom-module.git
+
     cd srm-mom-module
 
-### 2. Create the PostgreSQL database
+You now have the code at `C:\srm-mom-module`.
+
+---
+
+## STEP 4 — Create the PostgreSQL database
+
+Run this command. Enter your PostgreSQL password when prompted.
 
     psql -U postgres -c "CREATE DATABASE srm_mom_prod;"
 
-If your PostgreSQL uses a different port or password, set environment variables before running the backend:
+Expected output:
 
-Windows PowerShell:
+    CREATE DATABASE
 
-    $env:DB_HOST="localhost"
+If `psql` is not on PATH, use the full path (adjust version number):
+
+    & "C:\Program Files\PostgreSQL\16\bin\psql.exe" -U postgres -c "CREATE DATABASE srm_mom_prod;"
+
+---
+
+## STEP 5 — Start the backend (Terminal 1)
+
+Open a NEW PowerShell window. Keep this window OPEN.
+
+Run these commands one by one:
+
+    cd C:\srm-mom-module\backend
+
+If your PostgreSQL password is NOT "postgres", run this first:
+
+    $env:DB_PASSWORD="your_actual_password"
+
+If your PostgreSQL port is NOT 5432, run this too:
+
     $env:DB_PORT="5432"
-    $env:DB_NAME="srm_mom_prod"
-    $env:DB_USER="postgres"
-    $env:DB_PASSWORD="your_password"
 
-Linux / macOS:
+Now start the backend:
 
-    export DB_HOST=localhost
-    export DB_PORT=5432
-    export DB_NAME=srm_mom_prod
-    export DB_USER=postgres
-    export DB_PASSWORD=your_password
-
-### 3. Run the backend
-
-    cd backend
     mvn spring-boot:run
 
-Wait for: Tomcat started on port 8081.
+Wait until you see this line:
 
-Flyway will auto-create all tables and the DataLoader will seed 8 users.
+    Tomcat started on port 8081 (http)
 
-### 4. Run the frontend
+Flyway creates all tables automatically. DataLoader seeds 8 users.
 
-Open a second terminal:
+Do NOT close this window.
 
-    cd frontend
+---
+
+## STEP 6 — Start the frontend (Terminal 2)
+
+Open a SECOND PowerShell window (keep Terminal 1 running).
+
+Run these commands one by one:
+
+    cd C:\srm-mom-module\frontend
+
     npm install
+
+Wait until npm finishes. Then:
+
     npm run dev
 
-Wait for: Local: http://localhost:5173/
+Wait until you see this line:
 
-### 5. Open the app
+    Local: http://localhost:5173/
 
-Go to http://localhost:5173 in your browser.
+Do NOT close this window either.
 
-## Login Credentials
+---
+
+## STEP 7 — Open the application in browser
+
+Open Chrome or Edge. Go to:
+
+    http://localhost:5173
+
+You will see the SRM login page.
+
+---
+
+## STEP 8 — Login credentials
+
+Use any of these accounts:
 
 | Role | Username | Password |
 |---|---|---|
@@ -92,40 +182,155 @@ Go to http://localhost:5173 in your browser.
 | Dean Research | dean1 | Dean@123 |
 | Super Admin | admin | Admin@123 |
 
-## Workflow Demo
+---
 
-1. Login as scholar1 -> My MoMs -> + Create New MoM
-2. Fill Sections A-G, attach proofs, type your name -> Submit for Review
-3. Login as guide1 -> Pending My Action -> open the MoM -> fill Section H -> Recommend
-4. Login as coord1 -> Recommend
-5. Login as hoi1 -> certify leave + fellowship -> Recommend
-6. Login as dean1 -> Print PDF + Approve
+## STEP 9 — Run the full demo
 
-## Project Structure
+### Stage 1: Scholar submits
+
+1. Login as `scholar1` / `Scholar@123`
+2. Click "+ Create New MoM"
+3. Click the new MoM from the list
+4. Fill tabs: A. Scholar, B. Work, C. Milestones, D. Throughputs, E. Skills, F. Challenges, G. Assistantship, Leave
+5. Click "+ Attach" in any row to upload a proof file (PDF/PNG/JPG, max 10 MB)
+6. Go to "Review & Submit" tab
+7. Type your name: Scholar One
+8. Click "Submit for Review" then tick the checkbox and click Submit
+
+### Stage 2: Supervisor recommends
+
+1. Logout (top-right menu)
+2. Login as `guide1` / `Guide@123`
+3. In the table, click "View" on the pending MoM
+4. Fill Section H on the right:
+   - Month: October 2026
+   - Pick scores 1-5 for the 6 fields
+   - Remarks: Satisfactory progress
+5. Type your name: Guide One
+6. Click Recommend, then confirm
+
+### Stage 3: Coordinator recommends
+
+1. Logout
+2. Login as `coord1` / `Coord@123`
+3. Click "View" on the pending MoM
+4. Type remarks and name: Coordinator One
+5. Click Recommend, then confirm
+
+### Stage 4: HOI endorses
+
+1. Logout
+2. Login as `hoi1` / `Hoi@123`
+3. Click "View" on the pending MoM
+4. Fill Section I:
+   - Certified Leave: Yes
+   - Certified Fellowship: Yes
+   - Remarks: Endorsed
+5. Type your name: Head of Institute
+6. Click Recommend, then confirm
+
+### Stage 5: Dean approves
+
+1. Logout
+2. Login as `dean1` / `Dean@123`
+3. Click "View" on the pending MoM
+4. Click "Print / Download PDF" to see the generated PDF
+5. Fill Directorate Remarks and type name: Dean Research
+6. Click Approve, then confirm
+
+### Stage 6: Verify completion
+
+1. Logout
+2. Login again as `scholar1` / `Scholar@123`
+3. The MoM now shows DEAN APPROVED with progress at 100%
+
+---
+
+## TROUBLESHOOTING
+
+| Error | Fix |
+|---|---|
+| Connection refused: localhost:5432 | PostgreSQL service not running. Open Windows Services, start "postgresql-x64-16" |
+| password authentication failed | Wrong PostgreSQL password. Set $env:DB_PASSWORD="yourpassword" before starting backend |
+| database "srm_mom_prod" does not exist | Run the CREATE DATABASE command again (Step 4) |
+| Port 8081 already in use | Another app is using 8081. Kill it or change port in application.yml |
+| Port 5173 already in use | Run: npm run dev -- --port 5174 |
+| mvn: command not found | Maven not on PATH. Add Maven bin folder to PATH, then close and reopen PowerShell |
+| npm: command not found | Node.js not installed. Re-install from nodejs.org |
+| Blank page in browser | Frontend not running. Check Terminal 2 is still open |
+| CORS error in browser console | Backend not running. Check Terminal 1 is still open |
+| Login fails "Invalid username or password" | Backend didn't seed users. Restart backend, check Flyway migration ran |
+
+---
+
+## PROJECT STRUCTURE
 
     srm-mom-module/
-    ├── backend/          Spring Boot application
-    │   ├── src/main/java/com/srm/phd/mom/
-    │   │   ├── config/       SecurityConfig, DataLoader, GlobalExceptionHandler
-    │   │   ├── controller/   REST endpoints
-    │   │   ├── dto/          Request/response DTOs
-    │   │   ├── entity/       JPA entities
-    │   │   ├── repository/   Spring Data repositories
-    │   │   ├── security/     JWT auth
-    │   │   └── service/      Business logic
-    │   └── src/main/resources/
-    │       ├── db/migration/ Flyway migrations (V1-V5)
-    │       ├── static/       SRM logo
-    │       └── application.yml
-    └── frontend/         React + Vite app
-        ├── public/       SRM logo, favicon
+    ├── backend/                     Spring Boot application
+    │   ├── pom.xml
+    │   └── src/main/
+    │       ├── java/com/srm/phd/mom/
+    │       │   ├── MomApplication.java
+    │       │   ├── config/          Security, DataLoader, Exceptions
+    │       │   ├── controller/      REST endpoints
+    │       │   ├── dto/             Data transfer objects
+    │       │   ├── entity/          JPA entities
+    │       │   ├── repository/      Spring Data JPA repositories
+    │       │   ├── security/        JWT auth
+    │       │   └── service/         Business logic
+    │       └── resources/
+    │           ├── application.yml
+    │           ├── db/migration/    Flyway V1-V5 SQL files
+    │           └── static/srm-logo.jpg
+    │
+    └── frontend/                    React + Vite + Tailwind
+        ├── package.json
+        ├── vite.config.ts
+        ├── tailwind.config.js
+        ├── public/srm-logo.jpg
         └── src/
-            ├── api/          Axios clients
-            ├── auth/         AuthContext
-            ├── components/   Reusable UI
-            ├── layout/       Sidebar + header
-            └── pages/        Role dashboards
+            ├── main.tsx, App.tsx
+            ├── api/                 Axios clients
+            ├── auth/                AuthContext
+            ├── components/          Reusable components
+            ├── layout/              Sidebar + header
+            ├── pages/               Role dashboards
+            └── types/               TypeScript types
 
-## License
+---
+
+## SUMMARY OF COMMANDS
+
+Here is every command in one place for quick copy-paste.
+
+Step 3 - Clone:
+
+    cd C:\
+    git clone https://github.com/phddsu/srm-mom-module.git
+    cd srm-mom-module
+
+Step 4 - Create database:
+
+    psql -U postgres -c "CREATE DATABASE srm_mom_prod;"
+
+Step 5 - Backend (Terminal 1):
+
+    cd C:\srm-mom-module\backend
+    $env:DB_PASSWORD="your_password_here"
+    mvn spring-boot:run
+
+Step 6 - Frontend (Terminal 2):
+
+    cd C:\srm-mom-module\frontend
+    npm install
+    npm run dev
+
+Step 7 - Open in browser:
+
+    http://localhost:5173
+
+---
+
+## LICENSE
 
 Internal use - SRM Institute of Science and Technology.
