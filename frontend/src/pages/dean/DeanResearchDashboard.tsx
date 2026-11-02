@@ -89,11 +89,8 @@ export default function DeanResearchDashboard() {
 
       {!selected ? (
         <>
-          <div className="flex justify-between items-center mb-4">
-            <div>
-              <h2 className="font-serif text-2xl font-bold text-gray-800">Scholars in Pipeline</h2>
-              <p className="text-sm text-gray-500 mt-0.5">All MoMs and their current status</p>
-            </div>
+          <div className="flex justify-end items-center mb-4">
+            
             <span className="bg-srm-blue/10 text-srm-blue px-4 py-1.5 rounded-full text-xs font-bold">
               {pending.length} Pending / {all.length} Total
             </span>

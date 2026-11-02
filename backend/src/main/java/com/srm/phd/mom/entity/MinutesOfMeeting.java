@@ -69,6 +69,14 @@ public class MinutesOfMeeting {
     // --- Section B ---
     @Column(name = "section_b_coursework_completed") private Boolean sectionBCourseworkCompleted;
     @Column(name = "section_b_courseworks_recommended") private Integer sectionBCourseworksRecommended;
+    @Column(name = "section_b_courseworks", columnDefinition = "text") private String sectionBCourseworks;
+    @Column(name = "section_b_completed_count") private Integer sectionBCompletedCount;
+    @Column(name = "section_b_cv_completed") private Boolean sectionBCVCompleted;
+    @Column(name = "section_b_cv_date") private String sectionBCVDate;
+    @Column(name = "section_b_dcm_conducted") private Boolean sectionBDcmConducted;
+    @Column(name = "section_b_prephd_completed") private Boolean sectionBPrePhdCompleted;
+    @Column(name = "section_b_synopsis_submitted") private Boolean sectionBSynopsisSubmitted;
+    @Column(name = "section_b_thesis_submitted") private Boolean sectionBThesisSubmitted;
 
     // --- Section C/D/E/F (JSONB) ---
     @Column(name = "section_c_milestones", columnDefinition = "jsonb") private String sectionCMilestones;
@@ -81,6 +89,8 @@ public class MinutesOfMeeting {
     @Column(name = "section_g_tutorial_hours") private Integer sectionGTutorialHours;
     @Column(name = "section_g_support") private String sectionGSupport;
     @Column(name = "section_g_remarks") private String sectionGRemarks;
+    @Column(name = "section_g_leaves", columnDefinition = "text") private String sectionGLeaves;
+    @Column(name = "leave_status") private String leaveStatus;
 
     // --- Section H ---
     @Column(name = "section_h_month") private String sectionHMonth;

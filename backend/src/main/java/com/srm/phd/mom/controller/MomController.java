@@ -6,6 +6,7 @@ import com.srm.phd.mom.repository.*;
 import com.srm.phd.mom.service.JournalPaperService;
 import com.srm.phd.mom.service.MomNumberService;
 import com.srm.phd.mom.service.MomService;
+import com.srm.phd.mom.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -20,6 +21,7 @@ import java.util.Map;
 public class MomController {
 
     private final MomService momService;
+    private final NotificationService notificationService;
     private final MomRepository momRepository;
     private final MomHistoryRepository momHistoryRepository;
     private final UserRepository userRepository;
@@ -91,7 +93,7 @@ public class MomController {
         }
     }
 
-    @PostMapping("/{id}/save")
+    @PutMapping("/{id}/save")
     public ResponseEntity<?> save(@PathVariable Long id,
                                   @RequestBody MomFormDTO dto,
                                   Authentication auth) {
@@ -131,5 +133,85 @@ public class MomController {
     public ResponseEntity<?> deleteJournal(@PathVariable Long paperId) {
         journalPaperService.deletePaper(paperId);
         return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/{id}/leaves")
+    public ResponseEntity<?> saveLeaves(@PathVariable Long id, @RequestBody Map<String, Object> payload, Authentication auth) {
+        try {
+            User user = currentUser(auth);
+            MinutesOfMeeting mom = momRepository.findById(id).orElseThrow(() -> new RuntimeException("MoM not found"));
+            
+            // Allow saving if it's a draft
+            if (mom.getCurrentStatus() != MomStatus.DRAFT && !mom.getCurrentStatus().name().endsWith("_RETURNED")) {
+                return ResponseEntity.badRequest().body(Map.of("message", "Can only edit leaves on a DRAFT MoM"));
+            }
+
+            com.fasterxml.jackson.databind.ObjectMapper om = new com.fasterxml.jackson.databind.ObjectMapper();
+            // Use reflection to set the leaves field safely regardless of exact setter name
+            mom.setSectionGLeaves(om.writeValueAsString(payload.get("leaves")));
+            
+            // If they clicked submit, update the status and notify the guide
+            if (Boolean.TRUE.equals(payload.get("submit"))) {
+                mom.setLeaveStatus("SUBMITTED");
+                // Do NOT change currentStatus or currentStage here!
+                
+                // Notify Supervisor
+                String scholarName = userRepository.findById(mom.getScholarId()).map(User::getFullName).orElse("Unknown Scholar");
+                if (mom.getSupervisorId() != null) {
+                    notificationService.createNotification(
+                        mom.getSupervisorId(), "SUPERVISOR", mom.getId(),
+                        "Leave Request Submitted",
+                        "Scholar " + scholarName + " has submitted a Leave Request.",
+                        "LEAVE_SUBMITTED"
+                    );
+                }
+            }
+            
+            momRepository.save(mom);
+            return ResponseEntity.ok(Map.of("message", "Success"));
+            
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/{id}/leave-action")
+    public ResponseEntity<?> leaveAction(@PathVariable Long id, @RequestBody Map<String, String> payload, Authentication auth) {
+        try {
+            MinutesOfMeeting mom = momRepository.findById(id).orElseThrow(() -> new RuntimeException("MoM not found"));
+            String action = payload.get("action");
+            
+            if ("APPROVE".equals(action)) {
+                mom.setLeaveStatus("APPROVED");
+            } else {
+                mom.setLeaveStatus("REJECTED");
+            }
+            momRepository.save(mom);
+            return ResponseEntity.ok(Map.of("message", "Leave " + action + "D successfully"));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/{id}/alert")
+    public ResponseEntity<?> sendAlert(@PathVariable Long id, @RequestBody Map<String, String> payload, Authentication auth) {
+        try {
+            MinutesOfMeeting mom = momRepository.findById(id).orElseThrow(() -> new RuntimeException("MoM not found"));
+            String target = payload.get("target"); // "GUIDE" or "SCHOLAR"
+            String message = payload.get("message");
+
+            Long recipientId = target.equals("GUIDE") ? mom.getSupervisorId() : mom.getScholarId();
+            String recipientRole = target.equals("GUIDE") ? "SUPERVISOR" : "SCHOLAR";
+
+            notificationService.createNotification(
+                recipientId, recipientRole, mom.getId(),
+                "Alert from Research Coordinator",
+                message,
+                "COORDINATOR_ALERT"
+            );
+            return ResponseEntity.ok(Map.of("message", "Alert sent successfully"));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        }
     }
 }

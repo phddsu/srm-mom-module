@@ -29,6 +29,7 @@ export default function MomReviewPanel({ mom }: { mom: MinutesOfMeeting; showSig
 
   if (!mom) return null;
 
+  const courseworks = parseJSON(mom.sectionBCourseworks);
   const milestones = parseJSON(mom.sectionCMilestones);
   const throughputs = parseJSON(mom.sectionDThroughputs);
   const skills = parseJSON(mom.sectionESkills);
@@ -40,14 +41,16 @@ export default function MomReviewPanel({ mom }: { mom: MinutesOfMeeting; showSig
   const proofsFor = (section: string, rowIndex?: number) =>
     attachments.filter((a) => a.section === section && (rowIndex === undefined || a.rowIndex === rowIndex));
 
+  // Small inline icon/text for proofs
   const ProofInline = ({ section, rowIndex }: { section: string; rowIndex?: number }) => {
     const files = proofsFor(section, rowIndex);
-    if (files.length === 0) return <span className="text-xs text-gray-400">-</span>;
+    if (files.length === 0) return null;
     return (
-      <div className="flex flex-col gap-1">
+      <div className="flex flex-wrap gap-2 mt-1">
         {files.map((a) => (
           <a key={a.id} href={attachmentDownloadUrl(a.id)} target="_blank" rel="noreferrer"
-            className="text-xs text-blue-700 hover:underline truncate max-w-[200px]">
+            className="inline-flex items-center gap-1 text-[11px] text-blue-700 hover:underline bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
             {a.fileName}
           </a>
         ))}
@@ -100,6 +103,39 @@ export default function MomReviewPanel({ mom }: { mom: MinutesOfMeeting; showSig
         <h3 className="font-semibold text-blue-900 border-b pb-1 mb-3">B. Status of Research Work</h3>
         <Row label="Course Work Completed" value={mom.sectionBCourseworkCompleted ? 'Yes' : 'No'} />
         <Row label="No. of Course Works recommended by DAC" value={mom.sectionBCourseworksRecommended} />
+        <Row label="No. of Course Works completed as of date" value={mom.sectionBCompletedCount} />
+        <Row label="Comprehensive Viva Completed" value={mom.sectionBCVCompleted ? 'Yes' : 'No'} />
+        {mom.sectionBCVCompleted && <Row label="CV Date of Completion" value={mom.sectionBCVDate} />}
+        <Row label="Doctoral Committee Meeting Conducted" value={mom.sectionBDcmConducted ? 'Yes' : 'No'} />
+        <Row label="Pre-PhD Synopsis Meeting Completed" value={mom.sectionBPrePhdCompleted ? 'Yes' : 'No'} />
+        <Row label="Synopsis Submitted" value={mom.sectionBSynopsisSubmitted ? 'Yes' : 'No'} />
+        <Row label="Thesis Submitted" value={mom.sectionBThesisSubmitted ? 'Yes' : 'No'} />
+        
+        <table className="w-full text-sm mt-3">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="text-left px-2 py-1">Code</th>
+              <th className="text-left px-2 py-1">Title</th>
+              <th className="text-left px-2 py-1">Type</th>
+              <th className="text-left px-2 py-1">L/T/P/C</th>
+              <th className="text-left px-2 py-1">Status</th>
+              <th className="text-left px-2 py-1">Syllabus</th>
+            </tr>
+          </thead>
+          <tbody>
+            {courseworks.map((r: any, i: number) => (
+              <tr key={i} className="border-t">
+                <td className="px-2 py-1">{r.code || '-'}</td>
+                <td className="px-2 py-1">{r.title || '-'}</td>
+                <td className="px-2 py-1">{r.type}</td>
+                <td className="px-2 py-1">{r.lectureHours}/{r.tutorialHours}/{r.practicalHours}/{r.credits}</td>
+                <td className="px-2 py-1">{r.status}</td>
+                <td className="px-2 py-1"><ProofInline section="B" rowIndex={i} /></td>
+              </tr>
+            ))}
+            {courseworks.length === 0 ? <tr><td colSpan={6} className="px-2 py-2 text-gray-500 text-xs">No data</td></tr> : null}
+          </tbody>
+        </table>
       </section>
 
       {/* C */}
@@ -110,8 +146,7 @@ export default function MomReviewPanel({ mom }: { mom: MinutesOfMeeting; showSig
             <tr>
               <th className="text-left px-2 py-1">Milestone</th>
               <th className="text-left px-2 py-1">Status</th>
-              <th className="text-left px-2 py-1">Expected Date</th>
-              <th className="text-left px-2 py-1">Proof</th>
+              <th className="text-left px-2 py-1">Expected Date & Proof</th>
             </tr>
           </thead>
           <tbody>
@@ -119,11 +154,13 @@ export default function MomReviewPanel({ mom }: { mom: MinutesOfMeeting; showSig
               <tr key={i} className="border-t">
                 <td className="px-2 py-1">{r.name}</td>
                 <td className="px-2 py-1">{r.status}</td>
-                <td className="px-2 py-1">{r.expectedCompletionDate || '-'}</td>
-                <td className="px-2 py-1"><ProofInline section="C" rowIndex={i} /></td>
+                <td className="px-2 py-1">
+                  {r.expectedCompletionDate || '-'}
+                  <ProofInline section="C" rowIndex={i} />
+                </td>
               </tr>
             ))}
-            {milestones.length === 0 ? <tr><td colSpan={4} className="px-2 py-2 text-gray-500 text-xs">No data</td></tr> : null}
+            {milestones.length === 0 ? <tr><td colSpan={3} className="px-2 py-2 text-gray-500 text-xs">No data</td></tr> : null}
           </tbody>
         </table>
       </section>
@@ -136,8 +173,7 @@ export default function MomReviewPanel({ mom }: { mom: MinutesOfMeeting; showSig
             <tr>
               <th className="text-left px-2 py-1">Particulars</th>
               <th className="text-left px-2 py-1">Journal Type</th>
-              <th className="text-left px-2 py-1">Count</th>
-              <th className="text-left px-2 py-1">Proof</th>
+              <th className="text-left px-2 py-1">Count & Proof</th>
             </tr>
           </thead>
           <tbody>
@@ -145,11 +181,13 @@ export default function MomReviewPanel({ mom }: { mom: MinutesOfMeeting; showSig
               <tr key={i} className="border-t">
                 <td className="px-2 py-1">{r.particular}</td>
                 <td className="px-2 py-1">{r.journalType}</td>
-                <td className="px-2 py-1">{r.count}</td>
-                <td className="px-2 py-1"><ProofInline section="D" rowIndex={i} /></td>
+                <td className="px-2 py-1">
+                  {r.count || 0}
+                  <ProofInline section="D" rowIndex={i} />
+                </td>
               </tr>
             ))}
-            {throughputs.length === 0 ? <tr><td colSpan={4} className="px-2 py-2 text-gray-500 text-xs">No data</td></tr> : null}
+            {throughputs.length === 0 ? <tr><td colSpan={3} className="px-2 py-2 text-gray-500 text-xs">No data</td></tr> : null}
           </tbody>
         </table>
       </section>
@@ -159,17 +197,19 @@ export default function MomReviewPanel({ mom }: { mom: MinutesOfMeeting; showSig
         <h3 className="font-semibold text-blue-900 border-b pb-1 mb-3">E. Skills Acquired</h3>
         <table className="w-full text-sm">
           <thead className="bg-gray-50">
-            <tr><th className="text-left px-2 py-1 w-1/3">Particulars</th><th className="text-left px-2 py-1">Details</th><th className="text-left px-2 py-1">Proof</th></tr>
+            <tr><th className="text-left px-2 py-1 w-1/3">Particulars</th><th className="text-left px-2 py-1">Details & Proof</th></tr>
           </thead>
           <tbody>
             {skills.map((r: any, i: number) => (
               <tr key={i} className="border-t">
                 <td className="px-2 py-1">{r.skill}</td>
-                <td className="px-2 py-1">{r.details || '-'}</td>
-                <td className="px-2 py-1"><ProofInline section="E" rowIndex={i} /></td>
+                <td className="px-2 py-1">
+                  {r.details || '-'}
+                  <ProofInline section="E" rowIndex={i} />
+                </td>
               </tr>
             ))}
-            {skills.length === 0 ? <tr><td colSpan={3} className="px-2 py-2 text-gray-500 text-xs">No data</td></tr> : null}
+            {skills.length === 0 ? <tr><td colSpan={2} className="px-2 py-2 text-gray-500 text-xs">No data</td></tr> : null}
           </tbody>
         </table>
       </section>
@@ -198,17 +238,19 @@ export default function MomReviewPanel({ mom }: { mom: MinutesOfMeeting; showSig
         <h3 className="font-semibold text-blue-900 border-b pb-1 mb-3">F.2 Participation in Scholarly Activities</h3>
         <table className="w-full text-sm">
           <thead className="bg-gray-50">
-            <tr><th className="text-left px-2 py-1 w-1/3">Activity</th><th className="text-left px-2 py-1">Details</th><th className="text-left px-2 py-1">Proof</th></tr>
+            <tr><th className="text-left px-2 py-1 w-1/3">Activity</th><th className="text-left px-2 py-1">Details & Proof</th></tr>
           </thead>
           <tbody>
             {participation.map((r: any, i: number) => (
               <tr key={i} className="border-t">
                 <td className="px-2 py-1">{r.activity}</td>
-                <td className="px-2 py-1">{r.details || '-'}</td>
-                <td className="px-2 py-1"><ProofInline section="F_PART" rowIndex={i} /></td>
+                <td className="px-2 py-1">
+                  {r.details || '-'}
+                  <ProofInline section="F_PART" rowIndex={i} />
+                </td>
               </tr>
             ))}
-            {participation.length === 0 ? <tr><td colSpan={3} className="px-2 py-2 text-gray-500 text-xs">No data</td></tr> : null}
+            {participation.length === 0 ? <tr><td colSpan={2} className="px-2 py-2 text-gray-500 text-xs">No data</td></tr> : null}
           </tbody>
         </table>
       </section>
@@ -251,8 +293,7 @@ export default function MomReviewPanel({ mom }: { mom: MinutesOfMeeting; showSig
                 <th className="text-left px-2 py-1">From</th>
                 <th className="text-left px-2 py-1">To</th>
                 <th className="text-left px-2 py-1">Type</th>
-                <th className="text-left px-2 py-1">Reason</th>
-                <th className="text-left px-2 py-1">Proof</th>
+                <th className="text-left px-2 py-1">Reason & Proof</th>
               </tr>
             </thead>
             <tbody>
@@ -261,8 +302,10 @@ export default function MomReviewPanel({ mom }: { mom: MinutesOfMeeting; showSig
                   <td className="px-2 py-1">{r.fromDate || '-'}</td>
                   <td className="px-2 py-1">{r.toDate || '-'}</td>
                   <td className="px-2 py-1">{r.type}</td>
-                  <td className="px-2 py-1">{r.reason || '-'}</td>
-                  <td className="px-2 py-1"><ProofInline section="LEAVE" rowIndex={i} /></td>
+                  <td className="px-2 py-1">
+                    {r.reason || '-'}
+                    <ProofInline section="LEAVE" rowIndex={i} />
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -285,7 +328,7 @@ export default function MomReviewPanel({ mom }: { mom: MinutesOfMeeting; showSig
           <h3 className="font-semibold text-yellow-900 border-b pb-1 mb-3">I. Endorsements and Final Approval</h3>
           <Row label="Certified Leave" value={mom.sectionICertifiedLeave} />
           <Row label="Certified Fellowship" value={mom.sectionICertifiedFellowship} />
-          <Row label="HOI Remarks" value={mom.sectionIHOIhRemarks || mom.sectionIHoiRemarks} />
+          <Row label="HOI Remarks" value={mom.sectionIHoiRemarks} />
           <Row label="Dean Remarks" value={mom.sectionIDeanRemarks} />
         </section>
       ) : null}

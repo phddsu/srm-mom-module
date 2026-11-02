@@ -34,6 +34,8 @@ import java.util.Optional;
 @Service
 @RequiredArgsConstructor
 public class PdfService {
+    @org.springframework.beans.factory.annotation.Autowired private com.srm.phd.mom.repository.MomSectionAttachmentRepository momSectionAttachmentRepository;
+    @org.springframework.beans.factory.annotation.Autowired private com.srm.phd.mom.repository.MomSignatureRepository momSignatureRepository;
 
     private static final DeviceRgb SRM_BLUE = new DeviceRgb(11, 46, 122);
     private static final DeviceRgb LIGHT_GRAY = new DeviceRgb(240, 240, 240);
@@ -117,10 +119,33 @@ public class PdfService {
 
             // ==================== SECTION B ====================
             sectionTitle(doc, "B. STATUS OF RESEARCH WORK");
+            
+            // 1. Row 13 (Basic Status)
             Table b = kvTable();
             kvRow(b, "13", "Course Work Completed", Boolean.TRUE.equals(mom.getSectionBCourseworkCompleted()) ? "Yes" : "No");
             kvRow(b, "", "No. of Course Works recommended by DAC", str(mom.getSectionBCourseworksRecommended()));
             doc.add(b);
+            doc.add(new Paragraph("\n"));
+
+            // 2. Coursework Details Table
+            doc.add(listTable(mom.getSectionBCourseworks(),
+                    new String[]{"Code", "Title", "Type", "L", "T", "P", "C", "Status"},
+                    new float[]{12, 28, 8, 8, 8, 8, 8, 20},
+                    new String[]{"code", "title", "type", "lectureHours", "tutorialHours", "practicalHours", "credits", "status"}));
+            doc.add(new Paragraph("\n"));
+
+            // 3. Additional Status Checks (Rows 14-20)
+            Table bExtra = kvTable();
+            kvRow(bExtra, "14", "No. of Course Works completed as of date", str(mom.getSectionBCompletedCount()));
+            kvRow(bExtra, "15", "Comprehensive Viva Completed", Boolean.TRUE.equals(mom.getSectionBCVCompleted()) ? "Yes" : "No");
+            if (Boolean.TRUE.equals(mom.getSectionBCVCompleted())) {
+                kvRow(bExtra, "16", "Date of CV Completion", mom.getSectionBCVDate());
+            }
+            kvRow(bExtra, "17", "Doctoral Committee Meeting Conducted", Boolean.TRUE.equals(mom.getSectionBDcmConducted()) ? "Yes" : "No");
+            kvRow(bExtra, "18", "Pre-PhD Synopsis Meeting Completed", Boolean.TRUE.equals(mom.getSectionBPrePhdCompleted()) ? "Yes" : "No");
+            kvRow(bExtra, "19", "Synopsis Submitted", Boolean.TRUE.equals(mom.getSectionBSynopsisSubmitted()) ? "Yes" : "No");
+            kvRow(bExtra, "20", "Thesis Submitted", Boolean.TRUE.equals(mom.getSectionBThesisSubmitted()) ? "Yes" : "No");
+            doc.add(bExtra);
             doc.add(new Paragraph("\n"));
 
             // ==================== C ====================
@@ -133,10 +158,49 @@ public class PdfService {
 
             // ==================== D ====================
             sectionTitle(doc, "D. RESEARCH THROUGHPUTS");
-            doc.add(listTable(mom.getSectionDThroughputs(),
-                    new String[]{"Particulars", "Journal Type", "Count"},
-                    new float[]{60, 25, 15},
-                    new String[]{"particular", "journalType", "count"}));
+            try {
+                com.fasterxml.jackson.databind.ObjectMapper om = new com.fasterxml.jackson.databind.ObjectMapper();
+                java.util.List<java.util.Map<String, Object>> dList = om.readValue(mom.getSectionDThroughputs(), new com.fasterxml.jackson.core.type.TypeReference<java.util.List<java.util.Map<String, Object>>>(){});
+                com.itextpdf.layout.element.Table dTable = new com.itextpdf.layout.element.Table(new float[]{30f, 25f, 25f, 10f, 10f});
+                dTable.setWidth(com.itextpdf.layout.properties.UnitValue.createPercentValue(100));
+                
+                dTable.addCell(new com.itextpdf.layout.element.Cell().add(new Paragraph("Particulars").setBold().setFontSize(9)));
+                dTable.addCell(new com.itextpdf.layout.element.Cell().add(new Paragraph("Journal").setBold().setFontSize(9)));
+                dTable.addCell(new com.itextpdf.layout.element.Cell().add(new Paragraph("Stage").setBold().setFontSize(9)));
+                dTable.addCell(new com.itextpdf.layout.element.Cell().add(new Paragraph("Count").setBold().setFontSize(9)));
+                dTable.addCell(new com.itextpdf.layout.element.Cell().add(new Paragraph("Proof").setBold().setFontSize(9)));
+                
+                for (int i = 0; i < dList.size(); i++) {
+                    java.util.Map<String, Object> row = dList.get(i);
+                    String p = String.valueOf(row.getOrDefault("articleType", "-"));
+                    String j = String.valueOf(row.getOrDefault("journalName", "-"));
+                    String s = String.valueOf(row.getOrDefault("stage", "-"));
+                    String c = String.valueOf(row.getOrDefault("count", "0"));
+                    
+                    if ("null".equals(p) || p.isEmpty()) p = "-";
+                    if ("null".equals(j) || j.isEmpty()) j = "-";
+                    if ("null".equals(s) || s.isEmpty()) s = "-";
+                    if ("null".equals(c) || c.isEmpty()) c = "0";
+
+                    boolean hasProof = false;
+                    try {
+                        if (momSectionAttachmentRepository != null) {
+                            java.util.List<com.srm.phd.mom.entity.MomSectionAttachment> atts = momSectionAttachmentRepository.findByMomId(mom.getId());
+                            int finalI = i;
+                            hasProof = atts.stream().anyMatch(att -> "D".equals(att.getSection()) && att.getRowIndex() != null && att.getRowIndex() == finalI);
+                        }
+                    } catch (Exception ignored) {}
+                    
+                    dTable.addCell(new com.itextpdf.layout.element.Cell().add(new Paragraph(p).setFontSize(8)));
+                    dTable.addCell(new com.itextpdf.layout.element.Cell().add(new Paragraph(j).setFontSize(8)));
+                    dTable.addCell(new com.itextpdf.layout.element.Cell().add(new Paragraph(s).setFontSize(8)));
+                    dTable.addCell(new com.itextpdf.layout.element.Cell().add(new Paragraph(c).setFontSize(8)));
+                    dTable.addCell(new com.itextpdf.layout.element.Cell().add(new Paragraph(hasProof ? "Yes" : "No").setFontSize(8)));
+                }
+                doc.add(dTable);
+            } catch (Exception e) {
+                doc.add(new Paragraph("No throughput data available."));
+            }
             doc.add(new Paragraph("\n"));
 
             // ==================== E ====================
@@ -199,52 +263,22 @@ public class PdfService {
             doc.add(i);
             doc.add(new Paragraph("\n"));
 
-            // ==================== SIGNATURES (with real data) ====================
+            // ====================                                     // ==================== SIGNATURES ====================
+             // Force to new page
+            doc.add(new Paragraph("\n"));
             sectionTitle(doc, "SIGNATURES");
-            List<MomSignature> signatures = signatureRepository.findByMomId(mom.getId());
 
-            String[][] rolePairs = {
-                {"SCHOLAR", "Research Scholar"},
-                {"SUPERVISOR", "Supervisor"},
-                {"INSTITUTIONAL_RESEARCH_COORDINATOR", "Institutional Research Coordinator"},
-                {"HEAD_OF_INSTITUTE", "Head of Institute"},
-                {"DEAN_RESEARCH", "Dean Research"}
-            };
+            com.itextpdf.layout.element.Table sigTable = new com.itextpdf.layout.element.Table(new float[]{1f, 1f});
+            sigTable.setWidth(com.itextpdf.layout.properties.UnitValue.createPercentValue(100));
+            sigTable.setMarginTop(15f);
+             // <--- THIS PREVENTS PAGE BREAKING
 
-            Table sig = new Table(UnitValue.createPercentArray(new float[]{50, 50})).useAllAvailableWidth();
-            for (String[] rp : rolePairs) {
-                String role = rp[0];
-                String label = rp[1];
-                Optional<MomSignature> sigOpt = signatures.stream()
-                        .filter(s -> role.equalsIgnoreCase(s.getRole()))
-                        .findFirst();
+            addSignatureCell(sigTable, mom, "SCHOLAR", "Research Scholar");
+            addSignatureCell(sigTable, mom, "SUPERVISOR", "Supervisor");
+            addSignatureCell(sigTable, mom, "HEAD_OF_INSTITUTE", "Head of Institute");
+            addSignatureCell(sigTable, mom, "DEAN_RESEARCH", "Dean Research");
 
-                Cell c = new Cell()
-                        .setBorder(new SolidBorder(ColorConstants.GRAY, 0.5f))
-                        .setPadding(8)
-                        .setMinHeight(80);
-
-                c.add(new Paragraph(label).setBold().setFontSize(9).setMarginBottom(2));
-
-                if (sigOpt.isPresent()) {
-                    MomSignature s = sigOpt.get();
-                    c.add(new Paragraph("Signed by: " + s.getSignedByName()).setFontSize(9).setMarginBottom(1).setMarginTop(4));
-                    if (s.getSignedAt() != null) {
-                        c.add(new Paragraph("Date: " + s.getSignedAt().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"))).setFontSize(8).setMarginBottom(1));
-                    }
-                    if (s.getSignatureHash() != null && s.getSignatureHash().length() > 0) {
-                        String shortHash = s.getSignatureHash().length() > 32 ? s.getSignatureHash().substring(0, 32) + "..." : s.getSignatureHash();
-                        c.add(new Paragraph("Hash: " + shortHash).setFontSize(6).setFontColor(ColorConstants.GRAY));
-                    }
-                } else {
-                    c.add(new Paragraph("\n\nSignature: _____________________").setFontSize(8).setMarginTop(4));
-                    c.add(new Paragraph("(Not signed yet)").setFontSize(7).setItalic().setFontColor(ColorConstants.GRAY));
-                }
-                sig.addCell(c);
-            }
-            doc.add(sig);
-
-            doc.close();
+            doc.add(sigTable);doc.close();
         } catch (Exception e) {
             throw new RuntimeException("PDF generation failed: " + e.getMessage(), e);
         }
@@ -306,4 +340,40 @@ public class PdfService {
     }
 
     private String str(Object o) { return o == null ? "" : String.valueOf(o); }
+
+                private void addSignatureCell(com.itextpdf.layout.element.Table table, MinutesOfMeeting mom, String role, String displayName) {
+        try {
+            com.itextpdf.layout.element.Cell cell = new com.itextpdf.layout.element.Cell();
+            cell.setPadding(8f);
+            cell.setBorder(com.itextpdf.layout.borders.Border.NO_BORDER);
+            cell.setBorderBottom(new com.itextpdf.layout.borders.SolidBorder(com.itextpdf.kernel.colors.ColorConstants.LIGHT_GRAY, 1));
+            if (displayName.equals("Research Scholar") || displayName.equals("Head of Institute")) {
+                cell.setBorderRight(new com.itextpdf.layout.borders.SolidBorder(com.itextpdf.kernel.colors.ColorConstants.LIGHT_GRAY, 1));
+            }
+
+            cell.add(new Paragraph(displayName).setFontSize(10).setBold().setFontColor(com.itextpdf.kernel.colors.ColorConstants.DARK_GRAY));
+            cell.add(new Paragraph("\n"));
+
+            java.util.List<com.srm.phd.mom.entity.MomSignature> sigs = momSignatureRepository.findByMomId(mom.getId());
+            java.util.Optional<com.srm.phd.mom.entity.MomSignature> sig = sigs.stream().filter(s -> role.equalsIgnoreCase(s.getRole())).findFirst();
+            
+            if (sig.isPresent()) {
+                String name = sig.get().getSignedByName() != null ? sig.get().getSignedByName() : "Unknown";
+                String dateStr = "N/A";
+                if (sig.get().getSignedAt() != null) {
+                    dateStr = sig.get().getSignedAt().format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"));
+                }
+                
+                cell.add(new Paragraph("Signed by: " + name).setFontSize(9).setFontColor(com.itextpdf.kernel.colors.ColorConstants.BLACK));
+                cell.add(new Paragraph("Date: " + dateStr).setFontSize(8).setFontColor(com.itextpdf.kernel.colors.ColorConstants.GRAY));
+            } else {
+                cell.add(new Paragraph("Signature: ______________________").setFontSize(9).setFontColor(com.itextpdf.kernel.colors.ColorConstants.GRAY));
+                cell.add(new Paragraph("(Pending)").setFontSize(8).setFontColor(com.itextpdf.kernel.colors.ColorConstants.LIGHT_GRAY));
+            }
+
+            table.addCell(cell);
+        } catch (Exception e) {
+            System.err.println("Error adding signature cell: " + e.getMessage());
+        }
+    }
 }

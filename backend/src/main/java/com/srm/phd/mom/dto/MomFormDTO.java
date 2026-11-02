@@ -31,20 +31,28 @@ public class MomFormDTO {
     // Section B
     private Boolean sectionBCourseworkCompleted;
     private Integer sectionBCourseworksRecommended;
+    private java.util.List<java.util.Map<String,Object>> sectionBCourseworks;
+    private Integer sectionBCompletedCount;
+    private Boolean sectionBCVCompleted;
+    private String sectionBCVDate;
+    private Boolean sectionBDcmConducted;
+    private Boolean sectionBPrePhdCompleted;
+    private Boolean sectionBSynopsisSubmitted;
+    private Boolean sectionBThesisSubmitted;
 
     // Section C
-    private List<MilestoneDTO> sectionCMilestones;
+    private java.util.List<java.util.Map<String,Object>> sectionCMilestones;
 
     // Section D
-    private List<ThroughputDTO> sectionDThroughputs;
+    private java.util.List<java.util.Map<String,Object>> sectionDThroughputs;
 
     // Section E
-    private List<SkillsDTO> sectionESkills;
+    private java.util.List<java.util.Map<String,Object>> sectionESkills;
 
     // Section F
-    private List<ChallengesDTO> sectionFChallenges;
-    private List<ParticipationDTO> sectionFParticipation;
-    private List<PlannedActivityDTO> sectionFPlannedActivities;
+    private java.util.List<java.util.Map<String,Object>> sectionFChallenges;
+    private java.util.List<java.util.Map<String,Object>> sectionFParticipation;
+    private java.util.List<java.util.Map<String,Object>> sectionFPlannedActivities;
 
 
 
@@ -53,6 +61,7 @@ public class MomFormDTO {
     private Integer sectionGTutorialHours;
     private String sectionGSupport;
     private String sectionGRemarks;
+    private java.util.List<java.util.Map<String,Object>> sectionGLeaves;
 
     // Signature
     private String typedName;

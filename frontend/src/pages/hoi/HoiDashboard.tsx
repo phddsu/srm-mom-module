@@ -173,7 +173,7 @@ export default function HoiDashboard() {
                 <input className="srm-input mb-4" value={typedName} onChange={(e) => setTypedName(e.target.value)} placeholder="e.g. Head of Institute" />
                 <div className="flex gap-3">
                   <button onClick={() => setDialog({ open: true, action: 'RECOMMEND' })} className="srm-btn srm-btn-primary flex-1 justify-center">Recommend to Dean</button>
-                  <button onClick={() => setDialog({ open: true, action: 'RETURN' })} className="srm-btn srm-btn-secondary flex-1 justify-center">Return</button>
+                  <button onClick={() => setDialog({ open: true, action: 'RETURN' })} className="srm-btn srm-btn-secondary flex-1 justify-center">Unrecommend</button>
                 </div>
               </div>
             ) : (
@@ -190,9 +190,9 @@ export default function HoiDashboard() {
 
       <ConfirmationDialog
         open={dialog.open}
-        title={dialog.action === 'RECOMMEND' ? 'Endorse to Dean Research?' : 'Return to Scholar?'}
+        title={dialog.action === 'RECOMMEND' ? 'Endorse to Dean Research?' : 'Unrecommend to Scholar?'}
         message={dialog.action === 'RECOMMEND' ? 'This will forward the MoM to the Dean Research for final approval.' : 'This will return the MoM to the Scholar with remarks.'}
-        confirmLabel={dialog.action === 'RECOMMEND' ? 'Recommend' : 'Return'}
+        confirmLabel={dialog.action === 'RECOMMEND' ? 'Recommend' : 'Unrecommend'}
         onCancel={() => setDialog({ open: false, action: 'RECOMMEND' })}
         onConfirm={doAction}
       />

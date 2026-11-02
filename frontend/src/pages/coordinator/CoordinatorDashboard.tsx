@@ -24,6 +24,10 @@ export default function CoordinatorDashboard() {
   const [loading, setLoading] = useState(false);
   const [view, setView] = useState<'pending' | 'all'>('pending');
   const [dialog, setDialog] = useState<{ open: boolean; action: 'RECOMMEND' | 'RETURN' }>({ open: false, action: 'RECOMMEND' });
+  const [alertOpen, setAlertOpen] = useState(false);
+  const [alertTarget, setAlertTarget] = useState<'GUIDE' | 'SCHOLAR'>('GUIDE');
+  const [alertMsg, setAlertMsg] = useState('');
+  const [sendingAlert, setSendingAlert] = useState(false);
 
   const load = async () => {
     setLoading(true); setError('');
@@ -71,31 +75,30 @@ export default function CoordinatorDashboard() {
 
       {!selected ? (
         <>
-          <div className="flex justify-between items-center mb-4">
-            <div>
-              <h2 className="font-serif text-2xl font-bold text-gray-800">Scholars in Pipeline</h2>
-              <p className="text-sm text-gray-500 mt-0.5">All MoMs and their current status</p>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex gap-2">
+              <button
+                onClick={() => setView('pending')}
+                className={`px-4 py-2 rounded-lg text-xs font-semibold transition ${view === 'pending' ? 'bg-srm-blue text-white shadow-sm' : 'bg-white border border-gray-200 text-gray-600 hover:border-srm-blue/40'}`}>
+                Pending My Action ({pending.length})
+              </button>
+              <button
+                onClick={() => setView('all')}
+                className={`px-4 py-2 rounded-lg text-xs font-semibold transition ${view === 'all' ? 'bg-srm-blue text-white shadow-sm' : 'bg-white border border-gray-200 text-gray-600 hover:border-srm-blue/40'}`}>
+                All Submissions ({all.length})
+              </button>
             </div>
-            <span className="bg-srm-blue/10 text-srm-blue px-4 py-1.5 rounded-full text-xs font-bold">
-              {pending.length} Pending / {all.length} Total
-            </span>
+            {pending.length > 0 ? (
+              <div className="flex items-center gap-2 bg-blue-50 border border-blue-200 px-3 py-1.5 rounded-full">
+                <span className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
+                <span className="text-[11px] font-bold text-srm-blue uppercase tracking-wider">
+                  {pending.length} awaiting review
+                </span>
+              </div>
+            ) : null}
           </div>
 
-          {/* Tabs */}
-          <div className="flex gap-2 mb-4">
-            <button
-              onClick={() => setView('pending')}
-              className={`px-4 py-2 rounded text-xs font-semibold transition ${view === 'pending' ? 'bg-srm-blue text-white' : 'bg-white border border-gray-200 text-gray-600 hover:border-srm-blue/40'}`}>
-              Pending My Action ({pending.length})
-            </button>
-            <button
-              onClick={() => setView('all')}
-              className={`px-4 py-2 rounded text-xs font-semibold transition ${view === 'all' ? 'bg-srm-blue text-white' : 'bg-white border border-gray-200 text-gray-600 hover:border-srm-blue/40'}`}>
-              All Scholars ({all.length})
-            </button>
-          </div>
-
-          <div className="rounded-lg overflow-hidden border border-gray-200 shadow-sm">
+          <div className="rounded-lg overflow-hidden border border-gray-200 shadow-sm bg-white">
             <table className="srm-table">
               <thead>
                 <tr>
@@ -108,14 +111,34 @@ export default function CoordinatorDashboard() {
                 </tr>
               </thead>
               <tbody>
-                {loading ? <tr><td colSpan={6} className="text-center py-8 text-gray-500">Loading...</td></tr> : null}
+                {loading ? (
+                  <tr><td colSpan={6} className="text-center py-16">
+                    <div className="inline-flex items-center gap-2 text-gray-500 text-sm">
+                      <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                      </svg>
+                      Loading submissions...
+                    </div>
+                  </td></tr>
+                ) : null}
                 {!loading && list.length === 0 ? (
-                  <tr><td colSpan={6} className="text-center py-10 text-gray-500">
-                    {view === 'pending' ? 'No pending submissions' : 'No MoMs yet'}
+                  <tr><td colSpan={6} className="text-center py-16">
+                    <div className="w-16 h-16 rounded-full bg-green-50 mx-auto flex items-center justify-center mb-3">
+                      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-green-600">
+                        <polyline points="20 6 9 17 4 12" />
+                      </svg>
+                    </div>
+                    <p className="text-sm font-semibold text-gray-700">
+                      {view === 'pending' ? 'All caught up!' : 'No MoMs yet'}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {view === 'pending' ? 'No pending submissions to review.' : 'Nothing has been submitted so far.'}
+                    </p>
                   </td></tr>
                 ) : null}
                 {!loading && list.map((m) => (
-                  <tr key={m.id}>
+                  <tr key={m.id} className="hover:bg-gray-50/60 transition-colors">
                     <td className="font-mono text-xs font-semibold">{m.momNumber}</td>
                     <td>
                       <p className="font-semibold text-gray-800">{m.sectionAScholarName || ('Scholar #' + m.scholarId)}</p>
@@ -136,7 +159,7 @@ export default function CoordinatorDashboard() {
       ) : null}
 
       {selected ? (
-        <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
+        <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm w-full">
           <div className="flex justify-between items-center mb-5 pb-4 border-b">
             <div>
               <h3 className="font-serif text-lg font-bold text-gray-800">Review: {selected.momNumber}</h3>
@@ -144,44 +167,45 @@ export default function CoordinatorDashboard() {
                 Scholar: {selected.sectionAScholarName || ('#' + selected.scholarId)} | Stage: {stageLabel(selected.currentStage)} | Status: {selected.currentStatus.replace(/_/g, ' ')}
               </p>
             </div>
-            <button onClick={() => setSelected(null)} className="text-gray-400 hover:text-gray-700 text-xl">x</button>
+            <button onClick={() => setSelected(null)} className="text-gray-400 hover:text-gray-700 text-xl font-bold px-2 hover:bg-gray-100 rounded">×</button>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="max-h-[700px] overflow-y-auto pr-2">
-              <MomReviewPanel mom={selected} />
-            </div>
-
-            {selected.currentStage === 'COORDINATOR' ? (
-              <div className="bg-srm-bg rounded-lg p-5">
-                <h4 className="font-bold text-srm-blue text-sm uppercase tracking-wider mb-4">Coordinator Remarks</h4>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Remarks</label>
-                <textarea className="srm-input mb-4" rows={4} value={remarks} onChange={(e) => setRemarks(e.target.value)} />
-                <label className="block text-xs font-medium text-gray-600 mb-1">Type your full name to sign</label>
-                <input className="srm-input mb-4" value={typedName} onChange={(e) => setTypedName(e.target.value)} placeholder="e.g. Coordinator One" />
-                <div className="flex gap-3">
-                  <button onClick={() => setDialog({ open: true, action: 'RECOMMEND' })} className="srm-btn srm-btn-primary flex-1 justify-center">Recommend</button>
-                  <button onClick={() => setDialog({ open: true, action: 'RETURN' })} className="srm-btn srm-btn-secondary flex-1 justify-center">Return</button>
-                </div>
-              </div>
-            ) : (
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-5">
-                <h4 className="font-bold text-gray-700 text-sm uppercase tracking-wider mb-3">Read-only View</h4>
-                <p className="text-sm text-gray-600">
-                  This MoM is currently at stage <strong>{stageLabel(selected.currentStage)}</strong> with status <strong>{selected.currentStatus.replace(/_/g, ' ')}</strong>.
-                  No action is required from you.
-                </p>
-              </div>
-            )}
+          <div className="w-full">
+            <MomReviewPanel mom={selected} />
           </div>
         </div>
       ) : null}
 
+      {/* Alert Modal */}
+      {alertOpen ? (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md">
+            <h3 className="font-serif text-lg font-bold text-gray-800 mb-1">Send Alert to {alertTarget}</h3>
+            <p className="text-xs text-gray-500 mb-4">This will send a notification to the {alertTarget.toLowerCase()} regarding delays.</p>
+            <textarea className="srm-input mb-4" rows={4} value={alertMsg} onChange={(e) => setAlertMsg(e.target.value)} placeholder="e.g. Please review the pending MoM immediately..." />
+            <div className="flex justify-end gap-3">
+              <button onClick={() => setAlertOpen(false)} className="srm-btn srm-btn-secondary">Cancel</button>
+              <button onClick={async () => {
+                setSendingAlert(true);
+                try {
+                  await client.post('/api/mom/' + selected?.id + '/alert', { target: alertTarget, message: alertMsg });
+                  setAlertOpen(false);
+                  alert('Alert sent successfully!');
+                } catch (e) {
+                  alert('Failed to send alert');
+                } finally { setSendingAlert(false); }
+              }} disabled={sendingAlert} className="srm-btn srm-btn-primary">
+                {sendingAlert ? 'Sending...' : 'Send Alert'}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
       <ConfirmationDialog
         open={dialog.open}
-        title={dialog.action === 'RECOMMEND' ? 'Recommend to HOI?' : 'Return to Scholar?'}
+        title={dialog.action === 'RECOMMEND' ? 'Recommend to HOI?' : 'Unrecommend to Scholar?'}
         message={dialog.action === 'RECOMMEND' ? 'This will forward the MoM to the Head of Institute for endorsement.' : 'This will return the MoM to the Scholar with remarks.'}
-        confirmLabel={dialog.action === 'RECOMMEND' ? 'Recommend' : 'Return'}
+        confirmLabel={dialog.action === 'RECOMMEND' ? 'Recommend' : 'Unrecommend'}
         onCancel={() => setDialog({ open: false, action: 'RECOMMEND' })}
         onConfirm={doAction}
       />

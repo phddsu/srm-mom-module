@@ -34,7 +34,20 @@ public class User {
     @Column(length = 200)
     private String department;
 
+    @Column(length = 100)
+    private String designation;
+
+    @Column(length = 20)
+    private String phone;
+
+    @Column(name = "office_location", length = 200)
+    private String officeLocation;
+
+    @Column(name = "avatar_url", length = 255)
+    private String avatarUrl;
+
     @Column(nullable = false)
+    @Builder.Default
     private Boolean active = true;
 
     @Column(name = "created_at", updatable = false)

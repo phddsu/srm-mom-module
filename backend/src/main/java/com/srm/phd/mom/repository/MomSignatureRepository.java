@@ -10,4 +10,5 @@ import java.util.List;
 public interface MomSignatureRepository extends JpaRepository<MomSignature, Long> {
     List<MomSignature> findByMomId(Long momId);
     List<MomSignature> findByMomIdOrderBySignedAtAsc(Long momId);
+    java.util.Optional<com.srm.phd.mom.entity.MomSignature> findByMomIdAndRole(Long momId, String role);
 }

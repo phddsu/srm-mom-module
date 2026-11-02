@@ -1,0 +1,1 @@
+ALTER TABLE minutes_of_meeting ADD COLUMN IF NOT EXISTS leave_status VARCHAR(30) DEFAULT 'DRAFT';

@@ -48,10 +48,11 @@ public class MomService {
         // Notify Supervisor
         User supervisor = userRepository.findById(mom.getSupervisorId())
                 .orElseThrow(() -> new RuntimeException("Supervisor not found"));
+        String scholarName = userRepository.findById(mom.getScholarId()).map(User::getFullName).orElse("Unknown Scholar");
         notificationService.createNotification(
                 supervisor.getId(), supervisor.getRole().name(), mom.getId(),
                 "New MoM Submitted", 
-                "Scholar " + mom.getScholarName() + " has submitted a new MoM for your review.",
+                "Scholar " + scholarName + " has submitted a new MoM for your review.",
                 "SUBMIT"
         );
 
@@ -72,17 +73,18 @@ public class MomService {
 
         if ("RECOMMEND".equalsIgnoreCase(action)) {
             mom.setCurrentStatus(MomStatus.GUIDE_RECOMMENDED);
-            mom.setCurrentStage(MomStage.COORDINATOR);
+            mom.setCurrentStage(MomStage.HEAD_OF_INSTITUTE);
             momRepository.save(mom);
             
             saveHistory(mom, MomAction.GUIDE_RECOMMEND, MomStatus.SUBMITTED, MomStatus.GUIDE_RECOMMENDED, 
-                        MomStage.GUIDE, MomStage.COORDINATOR, guideId, remarks);
+                        MomStage.GUIDE, MomStage.HEAD_OF_INSTITUTE, guideId, remarks);
             
             // Notify Coordinator
-            User coordinator = userRepository.findAllByRole(Role.INSTITUTIONAL_RESEARCH_COORDINATOR).stream().findFirst()
+            User hoi = userRepository.findAllByRole(Role.HEAD_OF_INSTITUTE).stream().findFirst()
                     .orElseThrow(() -> new RuntimeException("Coordinator not found"));
-            notificationService.createNotification(
-                    coordinator.getId(), coordinator.getRole().name(), mom.getId(),
+            String scholarName = userRepository.findById(mom.getScholarId()).map(User::getFullName).orElse("Unknown Scholar");
+        notificationService.createNotification(
+                    hoi.getId(), hoi.getRole().name(), mom.getId(),
                     "MoM Pending Review", 
                     "MoM " + mom.getMomNumber() + " has been recommended by the Supervisor and is pending your review.",
                     "GUIDE_RECOMMEND"
@@ -96,7 +98,8 @@ public class MomService {
                         MomStage.GUIDE, MomStage.SCHOLAR, guideId, remarks);
             
             // Notify Scholar
-            notificationService.createNotification(
+            String scholarName = userRepository.findById(mom.getScholarId()).map(User::getFullName).orElse("Unknown Scholar");
+        notificationService.createNotification(
                     mom.getScholarId(), Role.SCHOLAR.name(), mom.getId(),
                     "MoM Returned", 
                     "Your MoM " + mom.getMomNumber() + " has been returned by the Supervisor. Remarks: " + remarks,
@@ -123,7 +126,8 @@ public class MomService {
             // Notify HOI
             User hoi = userRepository.findAllByRole(Role.HEAD_OF_INSTITUTE).stream().findFirst()
                     .orElseThrow(() -> new RuntimeException("HOI not found"));
-            notificationService.createNotification(
+            String scholarName = userRepository.findById(mom.getScholarId()).map(User::getFullName).orElse("Unknown Scholar");
+        notificationService.createNotification(
                     hoi.getId(), hoi.getRole().name(), mom.getId(),
                     "MoM Pending Endorsement", 
                     "MoM " + mom.getMomNumber() + " has been recommended by the Coordinator and is pending your endorsement.",
@@ -138,7 +142,8 @@ public class MomService {
                         MomStage.COORDINATOR, MomStage.SCHOLAR, coordId, remarks);
 
             // Notify Scholar
-            notificationService.createNotification(
+            String scholarName = userRepository.findById(mom.getScholarId()).map(User::getFullName).orElse("Unknown Scholar");
+        notificationService.createNotification(
                     mom.getScholarId(), Role.SCHOLAR.name(), mom.getId(),
                     "MoM Returned", 
                     "Your MoM " + mom.getMomNumber() + " has been returned by the Coordinator. Remarks: " + remarks,
@@ -171,7 +176,8 @@ public class MomService {
             // Notify Dean
             User dean = userRepository.findAllByRole(Role.DEAN_RESEARCH).stream().findFirst()
                     .orElseThrow(() -> new RuntimeException("Dean not found"));
-            notificationService.createNotification(
+            String scholarName = userRepository.findById(mom.getScholarId()).map(User::getFullName).orElse("Unknown Scholar");
+        notificationService.createNotification(
                     dean.getId(), dean.getRole().name(), mom.getId(),
                     "MoM Pending Approval", 
                     "MoM " + mom.getMomNumber() + " has been endorsed by the HOI and is pending your final approval.",
@@ -186,7 +192,8 @@ public class MomService {
                         MomStage.HEAD_OF_INSTITUTE, MomStage.SCHOLAR, hoiId, remarks);
 
             // Notify Scholar
-            notificationService.createNotification(
+            String scholarName = userRepository.findById(mom.getScholarId()).map(User::getFullName).orElse("Unknown Scholar");
+        notificationService.createNotification(
                     mom.getScholarId(), Role.SCHOLAR.name(), mom.getId(),
                     "MoM Returned", 
                     "Your MoM " + mom.getMomNumber() + " has been returned by the HOI. Remarks: " + remarks,
@@ -221,12 +228,15 @@ public class MomService {
         String msg = "MoM " + mom.getMomNumber() + " has been " + 
                      (action.equals("APPROVE") ? "APPROVED" : "REJECTED") + " by the Dean Research. Remarks: " + remarks;
         
+        String scholarName = userRepository.findById(mom.getScholarId()).map(User::getFullName).orElse("Unknown Scholar");
+
         notificationService.createNotification(mom.getScholarId(), Role.SCHOLAR.name(), mom.getId(), "MoM " + action, msg, "DEAN_ACTION");
         notificationService.createNotification(mom.getSupervisorId(), Role.SUPERVISOR.name(), mom.getId(), "MoM " + action, msg, "DEAN_ACTION");
-        
-        userRepository.findAllByRole(Role.INSTITUTIONAL_RESEARCH_COORDINATOR).stream().findFirst().ifPresent(c -> 
+
+        userRepository.findAllByRole(Role.INSTITUTIONAL_RESEARCH_COORDINATOR).stream().findFirst().ifPresent(c ->
             notificationService.createNotification(c.getId(), c.getRole().name(), mom.getId(), "MoM " + action, msg, "DEAN_ACTION"));
-        userRepository.findAllByRole(Role.HEAD_OF_INSTITUTE).stream().findFirst().ifPresent(h -> 
+
+        userRepository.findAllByRole(Role.HEAD_OF_INSTITUTE).stream().findFirst().ifPresent(h ->
             notificationService.createNotification(h.getId(), h.getRole().name(), mom.getId(), "MoM " + action, msg, "DEAN_ACTION"));
 
         return mom;
@@ -310,6 +320,14 @@ public class MomService {
 
         try {
             com.fasterxml.jackson.databind.ObjectMapper om = new com.fasterxml.jackson.databind.ObjectMapper();
+            if (dto.getSectionBCourseworks() != null) mom.setSectionBCourseworks(om.writeValueAsString(dto.getSectionBCourseworks()));
+        mom.setSectionBCompletedCount(dto.getSectionBCompletedCount());
+        mom.setSectionBCVCompleted(dto.getSectionBCVCompleted());
+        mom.setSectionBCVDate(dto.getSectionBCVDate());
+        mom.setSectionBDcmConducted(dto.getSectionBDcmConducted());
+        mom.setSectionBPrePhdCompleted(dto.getSectionBPrePhdCompleted());
+        mom.setSectionBSynopsisSubmitted(dto.getSectionBSynopsisSubmitted());
+        mom.setSectionBThesisSubmitted(dto.getSectionBThesisSubmitted());
             if (dto.getSectionCMilestones() != null) mom.setSectionCMilestones(om.writeValueAsString(dto.getSectionCMilestones()));
             if (dto.getSectionDThroughputs() != null) mom.setSectionDThroughputs(om.writeValueAsString(dto.getSectionDThroughputs()));
             if (dto.getSectionESkills() != null) mom.setSectionESkills(om.writeValueAsString(dto.getSectionESkills()));
@@ -322,5 +340,6 @@ public class MomService {
         mom.setSectionGTutorialHours(dto.getSectionGTutorialHours());
         mom.setSectionGSupport(dto.getSectionGSupport());
         mom.setSectionGRemarks(dto.getSectionGRemarks());
+        try { if (dto.getSectionGLeaves() != null) mom.setSectionGLeaves(new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(dto.getSectionGLeaves())); } catch (Exception ignored) {}
     }
 }

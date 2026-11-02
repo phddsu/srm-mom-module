@@ -116,33 +116,30 @@ export default function SupervisorDashboard() {
 
       {!selected ? (
         <>
-          <div className="flex justify-between items-end mb-6">
-            <div>
-              <h2 className="font-serif text-3xl font-bold text-gray-800 leading-tight">Scholars in Pipeline</h2>
-              <p className="text-sm text-gray-500 mt-1">All MoMs from your scholars and their current status</p>
+          {/* Simple heading + tabs + count badge in one row */}
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex gap-2">
+              <button
+                onClick={() => setView('pending')}
+                className={`px-4 py-2 rounded-lg text-xs font-semibold transition ${view === 'pending' ? 'bg-srm-blue text-white shadow-sm' : 'bg-white border border-gray-200 text-gray-600 hover:border-srm-blue/40'}`}
+              >
+                Pending My Action ({pending.length})
+              </button>
+              <button
+                onClick={() => setView('all')}
+                className={`px-4 py-2 rounded-lg text-xs font-semibold transition ${view === 'all' ? 'bg-srm-blue text-white shadow-sm' : 'bg-white border border-gray-200 text-gray-600 hover:border-srm-blue/40'}`}
+              >
+                All Submissions ({all.length})
+              </button>
             </div>
-            <div className="flex items-center gap-2 bg-blue-50 border border-blue-200 px-4 py-2 rounded-full">
-              <span className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
-              <span className="text-xs font-bold text-srm-blue uppercase tracking-wider">
-                {pending.length} Pending / {all.length} Total
-              </span>
-            </div>
-          </div>
-
-          {/* Tabs */}
-          <div className="flex gap-2 mb-4">
-            <button
-              onClick={() => setView('pending')}
-              className={`px-4 py-2 rounded-lg text-xs font-semibold transition ${view === 'pending' ? 'bg-srm-blue text-white shadow-sm' : 'bg-white border border-gray-200 text-gray-600 hover:border-srm-blue/40'}`}
-            >
-              Pending My Action ({pending.length})
-            </button>
-            <button
-              onClick={() => setView('all')}
-              className={`px-4 py-2 rounded-lg text-xs font-semibold transition ${view === 'all' ? 'bg-srm-blue text-white shadow-sm' : 'bg-white border border-gray-200 text-gray-600 hover:border-srm-blue/40'}`}
-            >
-              All Scholars ({all.length})
-            </button>
+            {pending.length > 0 ? (
+              <div className="flex items-center gap-2 bg-blue-50 border border-blue-200 px-3 py-1.5 rounded-full">
+                <span className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
+                <span className="text-[11px] font-bold text-srm-blue uppercase tracking-wider">
+                  {pending.length} awaiting review
+                </span>
+              </div>
+            ) : null}
           </div>
 
           <div className="bg-white rounded-xl border border-srm-border shadow-sm overflow-hidden">
@@ -267,7 +264,7 @@ export default function SupervisorDashboard() {
                 <div className="mb-5">
                   <div className="flex items-center gap-2 mb-1">
                     <div className="w-1 h-5 bg-srm-blue rounded"></div>
-                    <h4 className="font-bold text-srm-blue text-sm uppercase tracking-wider">Section H â€” Supervisor Assessment</h4>
+                    <h4 className="font-bold text-srm-blue text-sm uppercase tracking-wider">Section H — Supervisor Assessment</h4>
                   </div>
                   <p className="text-xs text-gray-500 ml-3">Provide your assessment scores (1-5) and final recommendation</p>
                 </div>
@@ -308,7 +305,7 @@ export default function SupervisorDashboard() {
                     Recommend
                   </button>
                   <button onClick={() => setDialog({ open: true, action: 'RETURN' })} disabled={!typedName.trim()} className="srm-btn srm-btn-secondary flex-1 justify-center disabled:opacity-40">
-                    Return
+                    Unrecommend
                   </button>
                 </div>
               </div>
@@ -335,11 +332,11 @@ export default function SupervisorDashboard() {
 
       <ConfirmationDialog
         open={dialog.open}
-        title={dialog.action === 'RECOMMEND' ? 'Recommend this MoM?' : 'Return to Scholar?'}
+        title={dialog.action === 'RECOMMEND' ? 'Recommend this MoM?' : 'Unrecommend to Scholar?'}
         message={dialog.action === 'RECOMMEND'
           ? 'This will forward the MoM to the Institutional Research Coordinator for their review.'
           : 'This will return the MoM to the Scholar with your remarks for correction.'}
-        confirmLabel={dialog.action === 'RECOMMEND' ? 'Recommend' : 'Return'}
+        confirmLabel={dialog.action === 'RECOMMEND' ? 'Recommend' : 'Unrecommend'}
         onCancel={() => setDialog({ open: false, action: 'RECOMMEND' })}
         onConfirm={doAction}
       />

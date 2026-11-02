@@ -122,3 +122,55 @@ export const attachmentDownloadUrl = (attachmentId: number) =>
 // ---- Common ----
 export const getAllMoms = () =>
   client.get<MinutesOfMeeting[]>('/api/mom/all');
+
+// ---- Scholar Profile ----
+export const getMyProfile = () =>
+  client.get('/api/scholar/profile');
+
+export const updateMyProfile = (payload: any) =>
+  client.put('/api/scholar/profile', payload);
+
+export const submitMyProfile = () =>
+  client.post('/api/scholar/profile/submit', {});
+
+export const listSupervisors = () =>
+  client.get('/api/scholar/profile/supervisors');
+
+// ---- Guide: Profile Approvals ----
+export const getGuidePendingProfiles = () =>
+  client.get('/api/guide/profile/pending');
+
+export const getGuideAllProfiles = () =>
+  client.get('/api/guide/profile/all');
+
+export const approveScholarProfile = (profileId: number) =>
+  client.post(`/api/guide/profile/${profileId}/approve`, {});
+
+export const rejectScholarProfile = (profileId: number, remarks: string) =>
+  client.post(`/api/guide/profile/${profileId}/reject`, { remarks });
+
+// ---- User Profile (all roles) ----
+export const getMyUserProfile = () =>
+  client.get('/api/user/me');
+
+export const updateMyUserProfile = (payload: any) =>
+  client.put('/api/user/me', payload);
+// ---- Admin: User Management ----
+export const listAllUsers = (role?: string) =>
+  client.get('/api/admin/users', { params: role ? { role } : {} });
+
+export const listRoles = () =>
+  client.get('/api/admin/roles');
+
+export const createUser = (payload: any) =>
+  client.post('/api/admin/users', payload);
+
+export const updateUser = (id: number, payload: any) =>
+  client.put(`/api/admin/users/${id}`, payload);
+
+export const deactivateUser = (id: number) =>
+  client.delete(`/api/admin/users/${id}`);
+
+// ---- Save Draft (no submit) ----
+export const saveMomDraft = (momId: number, payload: any) =>
+  client.put('/api/mom/' + momId + '/save', payload);
