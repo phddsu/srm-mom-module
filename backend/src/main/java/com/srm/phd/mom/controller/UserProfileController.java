@@ -66,7 +66,7 @@ public class UserProfileController {
             User u = currentUser(auth);
             if (file.isEmpty()) throw new RuntimeException("File is empty");
             
-            String uploadDir = "C:/srm-mom-module/backend/uploads/avatars/";
+            String uploadDir = "uploads/avatars/";
             java.io.File dir = new java.io.File(uploadDir);
             if (!dir.exists()) dir.mkdirs();
             
@@ -74,7 +74,7 @@ public class UserProfileController {
             java.nio.file.Path path = java.nio.file.Paths.get(uploadDir + fileName);
             java.nio.file.Files.copy(file.getInputStream(), path, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
             
-            String fileUrl = "http://localhost:8081/api/user/avatars/" + fileName;
+            String fileUrl = "/api/user/avatars/" + fileName;
             u.setAvatarUrl(fileUrl);
             userRepo.save(u);
             
@@ -88,7 +88,7 @@ public class UserProfileController {
     @GetMapping("/avatars/{fileName:.+}")
     public ResponseEntity<org.springframework.core.io.Resource> getAvatar(@PathVariable String fileName) {
         try {
-            java.nio.file.Path filePath = java.nio.file.Paths.get("C:/srm-mom-module/backend/uploads/avatars/" + fileName);
+            java.nio.file.Path filePath = java.nio.file.Paths.get("uploads/avatars/" + fileName);
             org.springframework.core.io.Resource resource = new org.springframework.core.io.UrlResource(filePath.toUri());
             if (resource.exists() || resource.isReadable()) {
                 return ResponseEntity.ok()

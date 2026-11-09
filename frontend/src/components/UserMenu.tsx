@@ -65,7 +65,7 @@ export default function UserMenu() {
       finalImageUrl = avatarUrl;
     } else {
       const path = avatarUrl.startsWith('/') ? avatarUrl : `/${avatarUrl}`;
-      finalImageUrl = `http://localhost:8081${path}`;
+      finalImageUrl = `${import.meta.env.VITE_API_BASE || 'http://localhost:8081'}${path}`;
     }
   }
 
