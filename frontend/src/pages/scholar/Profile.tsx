@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { client } from '../../api/client';
+import { useAuth } from '../../auth/AuthContext';
 import {
   getMyProfile, updateMyProfile, submitMyProfile, listSupervisors,
 } from '../../api/mom';
@@ -23,6 +24,7 @@ const statusLabel = (s: string) => String(s || '').replace(/_/g, ' ');
 
 export default function Profile() {
   const navigate = useNavigate();
+  const { refreshUser } = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [profile, setProfile] = useState<any>(null);
@@ -59,6 +61,7 @@ export default function Profile() {
       setLoading(false);
     }
   };
+
   useEffect(() => { load(); }, []);
 
   const isLocked = profile && (profile.status === 'APPROVED' || profile.status === 'PENDING_APPROVAL');
@@ -72,7 +75,6 @@ export default function Profile() {
       };
       const r = await updateMyProfile(payload);
       setProfile(r.data);
-      setTimeout(() => window.location.reload(), 1000);
       setSuccess('Profile saved.');
     } catch (e: any) {
       setError(e?.response?.data?.message || 'Save failed');
@@ -91,7 +93,6 @@ export default function Profile() {
       });
       const r = await submitMyProfile();
       setProfile(r.data);
-      setTimeout(() => window.location.reload(), 1000);
       setSuccess('Profile submitted to your supervisor for approval.');
     } catch (e: any) {
       setError(e?.response?.data?.message || 'Submit failed');
@@ -101,40 +102,63 @@ export default function Profile() {
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    
     setUploadingAvatar(true);
+    setError('');
+    setSuccess('');
+    
     const fd = new FormData();
     fd.append('file', file);
+    
     try {
       const r = await client.post('/api/user/avatar', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
-      setProfile(r.data);
-      setTimeout(() => window.location.reload(), 1000);
+      
+      setProfile((prev: any) => ({ ...prev, avatarUrl: r.data.avatarUrl }));
+      
+      if (refreshUser) await refreshUser(); 
+      
       setSuccess('Profile picture updated!');
-      // Force layout to re-render by updating local storage / context (optional, depends on your AuthContext)
-      window.location.reload(); // we will keep this for now to refresh the header 
     } catch (err: any) {
       setError(err?.response?.data?.message || 'Upload failed: ' + err.message);
     } finally {
       setUploadingAvatar(false);
     }
   };
+
   if (loading) {
-    return <div className="p-8 text-sm text-gray-500">Loading profileâ€¦</div>;
+    return <div className="p-8 text-sm text-gray-500">Loading profile...</div>;
   }
+
+  const getAvatarUrl = (url: string) => {
+    if (!url) return '';
+    if (url.includes('localhost:8081')) {
+      return url.replace('localhost:8081', 'localhost:8081');
+    }
+    if (url.startsWith('http')) return url;
+    const path = url.startsWith('/') ? url : `/${url}`;
+    return `http://localhost:8081${path}`;
+  };
 
   return (
     <div className="p-8 w-full max-w-3xl mx-auto">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-5">
           <div className="relative">
-            <div className="w-20 h-20 rounded-full bg-srm-blueLight border-2 border-srm-blue flex items-center justify-center overflow-hidden shadow-sm">
+            <div className="w-28 h-28 rounded-full bg-srm-blueLight border-4 border-white ring-2 ring-srm-blue shadow-lg flex items-center justify-center overflow-hidden">
               {profile?.avatarUrl ? (
-                <img src={`${profile.avatarUrl}?t=${Date.now()}`} alt="" className="w-full h-full object-cover" />
+                <img 
+                  src={getAvatarUrl(profile.avatarUrl)} 
+                  alt="Avatar" 
+                  className="w-full h-full object-cover rounded-full" 
+                />
               ) : (
-                <span className="text-3xl font-bold text-srm-blue">{(profile?.scholarFullName || 'S').charAt(0).toUpperCase()}</span>
+                <span className="text-4xl font-bold text-srm-blue">
+                  {(profile?.scholarFullName || 'S').charAt(0).toUpperCase()}
+                </span>
               )}
             </div>
-            <label className="absolute bottom-0 right-0 bg-white border border-srm-border rounded-full p-1.5 cursor-pointer shadow hover:bg-gray-50">
-              {uploadingAvatar ? '...' : '📷'}
+            <label className="absolute bottom-1 right-1 bg-srm-blue text-white border-2 border-white rounded-full w-8 h-8 flex items-center justify-center cursor-pointer shadow-md hover:bg-srm-blueMid transition">
+              {uploadingAvatar ? '...' : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>}
               <input type="file" className="hidden" accept="image/*" onChange={handleAvatarUpload} disabled={uploadingAvatar} />
             </label>
           </div>
@@ -244,7 +268,7 @@ export default function Profile() {
         <div className="flex justify-end gap-3 mt-6">
           <button onClick={handleSave} disabled={saving}
             className="px-5 py-2.5 text-sm font-semibold rounded-lg border border-srm-border text-gray-700 hover:bg-gray-50 disabled:opacity-40">
-            {saving ? 'Savingâ€¦' : 'Save Draft'}
+            {saving ? 'Saving...' : 'Save Draft'}
           </button>
           <button onClick={handleSubmit}
             className="px-5 py-2.5 text-sm font-semibold rounded-lg bg-srm-blue text-white hover:bg-srm-blue/90">

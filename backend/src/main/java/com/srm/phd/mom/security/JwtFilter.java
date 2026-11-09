@@ -56,4 +56,14 @@ public class JwtFilter extends OncePerRequestFilter {
 
         filterChain.doFilter(request, response);
     }
+
+    @Override
+    protected boolean shouldNotFilter(@NonNull HttpServletRequest request) throws ServletException {
+        // 1. Allow CORS preflight (OPTIONS) requests to pass through
+        if (org.springframework.http.HttpMethod.OPTIONS.matches(request.getMethod())) {
+            return true;
+        }
+        // 2. Allow the login endpoint to pass through without a token
+        return request.getServletPath().equals("/api/auth/login");
+    }
 }

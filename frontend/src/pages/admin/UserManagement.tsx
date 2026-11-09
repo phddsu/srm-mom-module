@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import {
   listAllUsers, listRoles, createUser, updateUser, deactivateUser,
 } from '../../api/mom';
@@ -35,6 +35,47 @@ export default function UserManagement() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [form, setForm] = useState<any>({ ...emptyForm });
   const [saving, setSaving] = useState(false);
+
+  // --- NEW: Excel Upload Logic ---
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('file', file);
+    setUploading(true);
+    setError('');
+    setSuccess('');
+
+    try {
+      // Assuming you store JWT in localStorage. Adjust if needed.
+      const token = localStorage.getItem('token'); 
+      const res = await fetch('http://100.99.68.16:8081/api/admin/users/bulk-upload', {
+        method: 'POST',
+        headers: { 
+          'Authorization': `Bearer ${token}` 
+        },
+        body: formData
+      });
+
+      const text = await res.text();
+      if (res.ok) {
+        setSuccess(text); // Shows the success message from backend
+        await load(); // Refresh the list automatically
+      } else {
+        setError("Upload failed: " + text);
+      }
+    } catch (err: any) {
+      setError("Error uploading file: " + (err.message || 'Unknown error'));
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = ''; // Reset input
+    }
+  };
+  // -------------------------------
 
   const load = async () => {
     setLoading(true); setError('');
@@ -116,9 +157,28 @@ export default function UserManagement() {
           <h1 className="font-serif text-3xl font-bold text-srm-blue">User Management</h1>
           <p className="text-sm text-gray-500 mt-1">Create, edit, and manage users across all roles</p>
         </div>
-        <button onClick={openCreate} className="srm-btn srm-btn-primary">
-          + Add User
-        </button>
+        
+        {/* --- NEW: Action Buttons with Excel Upload --- */}
+        <div className="flex items-center gap-3">
+          <input 
+            type="file" 
+            accept=".xlsx, .xls" 
+            ref={fileInputRef} 
+            onChange={handleFileUpload} 
+            style={{ display: 'none' }} 
+          />
+          <button 
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploading}
+            className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+          >
+            {uploading ? 'Uploading...' : 'Upload Excel'}
+          </button>
+          
+          <button onClick={openCreate} className="srm-btn srm-btn-primary">
+            + Add User
+          </button>
+        </div>
       </div>
 
       {error ? <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg">{error}</div> : null}

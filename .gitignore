@@ -38,3 +38,5 @@ desktop.ini
 *.env
 application-local.yml
 application-local.properties
+*.bak
+*.bak2

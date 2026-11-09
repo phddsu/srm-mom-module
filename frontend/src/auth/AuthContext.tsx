@@ -8,6 +8,7 @@ interface AuthCtx {
   login: (username: string, password: string) => Promise<User>;
   logout: () => void;
   loading: boolean;
+  refreshUser: () => Promise<void>;
 }
 
 const Ctx = createContext<AuthCtx | undefined>(undefined);
@@ -24,6 +25,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setToken(t);
       try { setUser(JSON.parse(u)); } catch { /* ignore */ }
     }
+    if (t && u) { refreshUser(); }
     setLoading(false);
   }, []);
 
@@ -34,7 +36,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.setItem('srm_user', JSON.stringify(u));
     setToken(t);
     setUser(u);
+    refreshUser();
     return u as User;
+  };
+
+  const refreshUser = async () => {
+    try {
+      const res = await client.get('/api/user/me');
+      const stored = JSON.parse(localStorage.getItem('srm_user') || '{}');
+      const merged = { ...stored, avatarUrl: res.data.avatarUrl };
+      localStorage.setItem('srm_user', JSON.stringify(merged));
+      setUser(merged as User);
+    } catch { /* ignore */ }
   };
 
   const logout = () => {
@@ -45,7 +58,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <Ctx.Provider value={{ user, token, login, logout, loading }}>
+    <Ctx.Provider value={{ user, token, login, logout, loading, refreshUser }}>
       {children}
     </Ctx.Provider>
   );

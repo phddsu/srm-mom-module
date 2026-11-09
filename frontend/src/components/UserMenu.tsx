@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../auth/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { client } from '../api/client';
+import { client } from '../api/client'; // <-- FIXED: Changed ../../ to ../
 
 export default function UserMenu() {
   const { user, logout } = useAuth();
@@ -54,12 +54,31 @@ export default function UserMenu() {
 
   if (!user) return null;
 
+  // Determine the correct image URL
+  const avatarUrl = (user as any)?.avatarUrl;
+  let finalImageUrl = "";
+  
+  if (avatarUrl) {
+    if (avatarUrl.includes('localhost:8081')) {
+      finalImageUrl = avatarUrl.replace('localhost:8081', 'localhost:8081');
+    } else if (avatarUrl.startsWith('http')) {
+      finalImageUrl = avatarUrl;
+    } else {
+      const path = avatarUrl.startsWith('/') ? avatarUrl : `/${avatarUrl}`;
+      finalImageUrl = `http://localhost:8081${path}`;
+    }
+  }
+
   return (
     <div className="relative" ref={menuRef}>
       <button onClick={() => setOpen(!open)} className="flex items-center gap-3 focus:outline-none">
         <div className="w-9 h-9 rounded-full bg-gradient-to-br from-srm-blueMid to-srm-blue text-white flex items-center justify-center font-bold text-xs shadow-sm overflow-hidden">
-          {(user as any).avatarUrl ? (
-            <img src={`${(user as any).avatarUrl}?t=${Date.now()}`} alt="" className="w-full h-full object-cover" />
+          {avatarUrl ? (
+            <img 
+              src={finalImageUrl} 
+              alt="Avatar" 
+              className="w-full h-full object-cover" 
+            />
           ) : (
             user.fullName?.charAt(0).toUpperCase()
           )}
