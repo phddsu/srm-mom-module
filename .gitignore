@@ -40,3 +40,5 @@ application-local.yml
 application-local.properties
 *.bak
 *.bak2
+
+*.bak*
