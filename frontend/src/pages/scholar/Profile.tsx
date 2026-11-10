@@ -136,7 +136,7 @@ export default function Profile() {
     }
     if (url.startsWith('http')) return url;
     const path = url.startsWith('/') ? url : `/${url}`;
-    return `${import.meta.env.VITE_API_BASE || 'http://localhost:8081'}${path}`;
+    return `${import.meta.env.VITE_API_BASE || 'import.meta.env.VITE_API_BASE_URL'}${path}`;
   };
 
   return (

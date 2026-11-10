@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { getCoordinatorPending, coordinatorAction, getMomById, getAllMoms } from '../../api/mom';
+import { client } from '../../api/client';
 import type { MinutesOfMeeting } from '../../types/mom';
 import MomReviewPanel from '../../components/MomReviewPanel';
 import ConfirmationDialog from '../../components/ConfirmationDialog';
@@ -24,10 +25,13 @@ export default function CoordinatorDashboard() {
   const [loading, setLoading] = useState(false);
   const [view, setView] = useState<'pending' | 'all'>('pending');
   const [dialog, setDialog] = useState<{ open: boolean; action: 'RECOMMEND' | 'RETURN' }>({ open: false, action: 'RECOMMEND' });
-  const [alertOpen, setAlertOpen] = useState(false);
-  const [alertTarget, setAlertTarget] = useState<'GUIDE' | 'SCHOLAR'>('GUIDE');
-  const [alertMsg, setAlertMsg] = useState('');
-  const [sendingAlert, setSendingAlert] = useState(false);
+
+  // --- OFFICIAL NOTICE STATE ---
+  const [showNoticeModal, setShowNoticeModal] = useState(false);
+  // FIXED: Added momId to the state type
+  const [selectedScholar, setSelectedScholar] = useState<{ id: number; momId: number; name: string } | null>(null);
+  const [noticeMessage, setNoticeMessage] = useState('Dear Scholar,\n\nThis is a formal reminder to complete your pending MoM submission and update your PhD progress at the earliest. Please ensure all details are filled correctly and submitted to your supervisor.\n\nRegards,\nResearch Coordinator');
+  const [sendingNotice, setSendingNotice] = useState(false);
 
   const load = async () => {
     setLoading(true); setError('');
@@ -56,6 +60,25 @@ export default function CoordinatorDashboard() {
       setSelected(null); setTypedName(''); setRemarks('');
       await load();
     } catch (e: any) { setError(e?.response?.data?.message || 'Action failed'); }
+  };
+
+  // --- HANDLE SEND NOTICE ---
+    const handleSendNotice = async () => {
+    if (!selectedScholar) return;
+    setSendingNotice(true);
+    try {
+      await client.post('/api/notifications/send-alert', { 
+        userId: selectedScholar.id, 
+        momId: selectedScholar.momId, 
+        message: noticeMessage 
+      });
+      alert('Official notice sent successfully to the scholar.'); 
+      setShowNoticeModal(false); 
+    } catch (err: any) { 
+      alert('Error: ' + (err.response?.data || err.message)); 
+    } finally { 
+      setSendingNotice(false); 
+    }
   };
 
   const list = view === 'pending' ? pending : all;
@@ -147,8 +170,22 @@ export default function CoordinatorDashboard() {
                     <td className="text-xs">{m.periodMonth}/{m.periodYear}</td>
                     <td className="text-xs font-medium">{stageLabel(m.currentStage)}</td>
                     <td><span className={`srm-badge ${statusClass(m.currentStatus)}`}>{m.currentStatus.replace(/_/g, ' ')}</span></td>
-                    <td className="text-right">
+                    <td className="text-right whitespace-nowrap">
                       <ViewButton onClick={() => openMom(m.id)} label="View" />
+                      
+                      {/* PROFESSIONAL NOTICE BUTTON */}
+                      {(m.currentStatus === 'DRAFT' || m.currentStatus.includes('RETURNED')) && (
+                        <button 
+                          onClick={() => { 
+                            // FIXED: passing m.id as momId
+                            setSelectedScholar({ id: (m as any).scholarUserId || (m as any).userId || m.scholarId, momId: m.id, name: m.sectionAScholarName || 'Scholar' }); 
+                            setShowNoticeModal(true); 
+                          }} 
+                          className="text-blue-600 hover:text-blue-800 text-xs font-bold uppercase tracking-wide ml-4 px-3 py-1.5 rounded bg-blue-50 border border-blue-100 hover:bg-blue-100 transition-colors"
+                        >
+                          Send Notice
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -176,31 +213,43 @@ export default function CoordinatorDashboard() {
         </div>
       ) : null}
 
-      {/* Alert Modal */}
-      {alertOpen ? (
+      {/* PROFESSIONAL NOTICE MODAL */}
+      {showNoticeModal && selectedScholar && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md">
-            <h3 className="font-serif text-lg font-bold text-gray-800 mb-1">Send Alert to {alertTarget}</h3>
-            <p className="text-xs text-gray-500 mb-4">This will send a notification to the {alertTarget.toLowerCase()} regarding delays.</p>
-            <textarea className="srm-input mb-4" rows={4} value={alertMsg} onChange={(e) => setAlertMsg(e.target.value)} placeholder="e.g. Please review the pending MoM immediately..." />
-            <div className="flex justify-end gap-3">
-              <button onClick={() => setAlertOpen(false)} className="srm-btn srm-btn-secondary">Cancel</button>
-              <button onClick={async () => {
-                setSendingAlert(true);
-                try {
-                  await client.post('/api/mom/' + selected?.id + '/alert', { target: alertTarget, message: alertMsg });
-                  setAlertOpen(false);
-                  alert('Alert sent successfully!');
-                } catch (e) {
-                  alert('Failed to send alert');
-                } finally { setSendingAlert(false); }
-              }} disabled={sendingAlert} className="srm-btn srm-btn-primary">
-                {sendingAlert ? 'Sending...' : 'Send Alert'}
+          <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-lg">
+            <div className="border-b border-gray-100 pb-3 mb-4">
+              <h3 className="font-serif text-xl font-bold text-gray-800">Official Communication</h3>
+              <p className="text-sm text-gray-500 mt-1">
+                Send a formal notice or reminder to <span className="font-semibold text-gray-700">{selectedScholar.name}</span>.
+                This will appear in their portal's notification center.
+              </p>
+            </div>
+            
+            <textarea 
+              className="w-full h-48 resize-none p-3 border border-gray-300 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-srm-blue focus:border-transparent"
+              value={noticeMessage}
+              onChange={(e) => setNoticeMessage(e.target.value)}
+            />
+
+            <div className="flex justify-end gap-3 mt-5">
+              <button 
+                onClick={() => setShowNoticeModal(false)} 
+                className="px-5 py-2.5 text-sm font-semibold rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={handleSendNotice} 
+                disabled={sendingNotice} 
+                className="px-5 py-2.5 text-sm font-semibold rounded-lg bg-srm-blue text-white hover:bg-srm-blue/90 disabled:opacity-50"
+              >
+                {sendingNotice ? 'Sending...' : 'Send Notice to Scholar'}
               </button>
             </div>
           </div>
         </div>
-      ) : null}
+      )}
+
       <ConfirmationDialog
         open={dialog.open}
         title={dialog.action === 'RECOMMEND' ? 'Recommend to HOI?' : 'Unrecommend to Scholar?'}

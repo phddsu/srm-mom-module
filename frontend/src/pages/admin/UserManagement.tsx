@@ -53,7 +53,7 @@ export default function UserManagement() {
     try {
       // Assuming you store JWT in localStorage. Adjust if needed.
       const token = localStorage.getItem('token'); 
-      const res = await fetch((import.meta.env.VITE_API_BASE || 'http://localhost:8081') + '/api/admin/users/bulk-upload', {
+      const res = await fetch((import.meta.env.VITE_API_BASE || 'import.meta.env.VITE_API_BASE_URL') + '/api/admin/users/bulk-upload', {
         method: 'POST',
         headers: { 
           'Authorization': `Bearer ${token}` 

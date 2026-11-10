@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { client } from '../api/client'; // <-- FIXED: Changed ../../ to ../
 
 export default function UserMenu() {
-  const { user, logout } = useAuth();
+  const { user, logout, refreshUser } = useAuth();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -52,6 +52,8 @@ export default function UserMenu() {
     }
   };
 
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => { const file = e.target.files?.[0]; if (!file) return; const fd = new FormData(); fd.append("file", file); try { await client.post("/api/user/avatar", fd, { headers: { "Content-Type": "multipart/form-data" } }); await refreshUser(); } catch (err: any) { alert("Upload failed: " + (err?.response?.data?.message || err.message)); } setOpen(false); };
+
   if (!user) return null;
 
   // Determine the correct image URL
@@ -65,7 +67,7 @@ export default function UserMenu() {
       finalImageUrl = avatarUrl;
     } else {
       const path = avatarUrl.startsWith('/') ? avatarUrl : `/${avatarUrl}`;
-      finalImageUrl = `${import.meta.env.VITE_API_BASE || 'http://localhost:8081'}${path}`;
+      finalImageUrl = `${import.meta.env.VITE_API_BASE || 'import.meta.env.VITE_API_BASE_URL'}${path}`;
     }
   }
 
@@ -98,6 +100,7 @@ export default function UserMenu() {
             <p className="text-[10px] text-gray-400 mt-1">{user.email}</p>
           </div>
           <div className="py-2">
+            <label className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2 cursor-pointer">Change Photo<input type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} /></label>
             <button onClick={() => { setOpen(false); setShowPasswordModal(true); }} className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2">
                ⚙️ Change Password
             </button>

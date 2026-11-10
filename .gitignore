@@ -1,44 +1,24 @@
-# ===== Node / Frontend =====
+# Frontend
 node_modules/
 dist/
-.vite/
-*.log
-npm-debug.log*
 .env
-.env.local
+.env.production
 
-# ===== Java / Maven / Backend =====
+# Backend
 target/
-*.class
 *.jar
-!.mvn/wrapper/maven-wrapper.jar
-mvnw.cmd
+.mvn/
 mvnw
+mvnw.cmd
 
-# ===== Uploads =====
-backend/uploads/
-uploads/
-
-# ===== IDE =====
-.idea/
+# IDE
 .vscode/
+.idea/
 *.iml
-*.ipr
-*.iws
-.settings/
-.project
-.classpath
 
-# ===== OS =====
+# OS
 .DS_Store
 Thumbs.db
-desktop.ini
 
-# ===== Secrets =====
-*.env
-application-local.yml
-application-local.properties
-*.bak
-*.bak2
-
-*.bak*
+# Uploads (Don't commit user images to Git)
+backend/uploads/
