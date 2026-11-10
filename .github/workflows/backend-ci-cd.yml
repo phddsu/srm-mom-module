@@ -22,6 +22,12 @@ jobs:
       run: |
         cd backend
         mvn clean package -DskipTests
+    - name: Upload JAR as Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: srm-mom-backend-jar
+        path: backend/target/*.jar
+
     - name: Copy JAR to Server
       uses: appleboy/scp-action@v0.1.7
       with:
