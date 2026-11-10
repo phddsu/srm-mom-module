@@ -10,7 +10,9 @@ export default function NotificationBell() {
   const [open, setOpen] = useState(false);
 
   const fetchNotifications = async () => {
-    if (!user) return;
+    if (!user || !user.id) return;
+    if (!user || !user.id) return;
+    if (!user || !user.id) return;
     try {
       // Fetch the actual list of notifications using the new backend endpoint
       const res = await client.get(`/api/notifications/user/${user.id}`);
