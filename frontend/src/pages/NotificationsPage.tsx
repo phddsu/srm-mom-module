@@ -11,7 +11,7 @@ export default function NotificationsPage() {
   
   // Compose State
   const [showComposeModal, setShowComposeModal] = useState(false);
-  const [targetRole, setTargetRole] = useState<'COORDINATOR' | 'GUIDE'>('COORDINATOR');
+  const [targetRoles, setTargetRole] = useState<'COORDINATOR' | 'GUIDE'>('COORDINATOR');
   const [messageContent, setMessageContent] = useState('');
   const [sendingMsg, setSendingMsg] = useState(false);
 
@@ -38,7 +38,7 @@ export default function NotificationsPage() {
     if (!messageContent.trim() || !user?.id) return;
     setSendingMsg(true);
     try {
-      if (targetRole === 'COORDINATOR') {
+      if (targetRoles === 'COORDINATOR') {
         await client.post('/api/notifications/reply', {
           scholarId: user.id,
           message: messageContent
@@ -66,6 +66,12 @@ export default function NotificationsPage() {
     } finally {
       setSendingMsg(false);
     }
+  };
+
+    const toggleRole = (role: string) => {
+    setTargetRoles(prev => 
+      prev.includes(role) ? prev.filter(r => r !== role) : [...prev, role]
+    );
   };
 
   return (
@@ -133,14 +139,21 @@ export default function NotificationsPage() {
             
             <div className="mb-4">
               <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">To</label>
-              <select 
-                value={targetRole}
-                onChange={(e) => setTargetRole(e.target.value as any)}
-                className="w-full p-2.5 border border-gray-300 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-srm-blue bg-gray-50"
-              >
-                <option value="COORDINATOR">Institutional Research Coordinator</option>
-                <option value="GUIDE">My PhD Supervisor (Guide)</option>
-              </select>
+              
+<div className="flex flex-col gap-2 p-3 border border-gray-300 rounded-lg bg-gray-50 max-h-48 overflow-y-auto">
+  {['INSTITUTIONAL_RESEARCH_COORDINATOR', 'HEAD_OF_INSTITUTE', 'SUPERVISOR', 'SCHOLAR'].map(role => (
+    <label key={role} className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+      <input 
+        type="checkbox" 
+        className="rounded border-gray-300 text-srm-blue focus:ring-srm-blue"
+        checked={targetRoles.includes(role)}
+        onChange={() => toggleRole(role)}
+      />
+      {role.replace(/_/g, ' ')}
+    </label>
+  ))}
+</div>
+
             </div>
             
             <div className="mb-4">
