@@ -69,8 +69,8 @@ export default function NotificationsPage() {
   };
 
     const toggleRole = (role: string) => {
-    setTargetRoles(prev => 
-      prev.includes(role) ? prev.filter(r => r !== role) : [...prev, role]
+    setTargetRole(prev => 
+      prev === 'COORDINATOR' ? 'GUIDE' : 'COORDINATOR'
     );
   };
 

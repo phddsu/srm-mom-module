@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../../auth/AuthContext';
 import { client } from '../../api/client';
-import { getGuidePending, getMomById } from '../../api/mom';
+import { getGuidePending, getMomById, getGuidePendingProfiles, approveScholarProfile } from '../../api/mom';
 import type { MinutesOfMeeting } from '../../types/mom';
 import MomReviewPanel from '../../components/MomReviewPanel';
 import ViewButton from '../../components/ViewButton';
@@ -16,8 +16,10 @@ const statusClass = (s: string) => {
 export default function SupervisorDashboard() {
   const { user } = useAuth();
   const [pending, setPending] = useState<MinutesOfMeeting[]>([]);
+  const [pendingProfiles, setPendingProfiles] = useState<any[]>([]);
   const [selected, setSelected] = useState<MinutesOfMeeting | null>(null);
   const [loading, setLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState<'MOMS' | 'PROFILES'>('MOMS');
 
   // MESSAGING STATE
   const [showMessageModal, setShowMessageModal] = useState(false);
@@ -30,6 +32,13 @@ export default function SupervisorDashboard() {
     try {
       const res = await getGuidePending();
       setPending(res?.data || []);
+      
+      try {
+        const pRes = await getGuidePendingProfiles();
+        setPendingProfiles(pRes?.data || []);
+      } catch (e) {
+        console.log("No pending profiles");
+      }
     } catch (err) {
       console.error(err);
     } finally {
@@ -56,7 +65,7 @@ export default function SupervisorDashboard() {
       await client.post('/api/notifications/send-message', {
         senderId: user.id,
         recipientId: messageTarget.id,
-        recipientName: messageTarget.name, // Ensures name is sent
+        recipientName: messageTarget.name,
         message: messageContent,
         title: "Message from Guide:"
       });
@@ -64,9 +73,7 @@ export default function SupervisorDashboard() {
       setShowMessageModal(false);
       setMessageContent('');
     } catch (err: any) {
-      console.error(err);
-      const errorMsg = err.response?.data?.message || err.response?.data || err.message || 'Unknown error';
-      alert('Error: ' + errorMsg);
+      alert('Error: ' + (err.response?.data?.message || err.message));
     } finally {
       setSendingMessage(false);
     }
@@ -83,55 +90,110 @@ export default function SupervisorDashboard() {
 
       {!selected ? (
         <>
-          <div className="mb-4">
-            <h2 className="text-lg font-bold text-gray-800">Pending My Approval ({pending.length})</h2>
+          <div className="mb-4 flex gap-4 border-b border-gray-200">
+            <button 
+              onClick={() => setActiveTab('MOMS')} 
+              className={`pb-2 px-4 font-semibold text-sm transition-colors ${activeTab === 'MOMS' ? 'border-b-2 border-srm-blue text-srm-blue' : 'text-gray-500 hover:text-gray-700'}`}
+            >
+              Pending MoMs ({pending.length})
+            </button>
+            <button 
+              onClick={() => setActiveTab('PROFILES')} 
+              className={`pb-2 px-4 font-semibold text-sm transition-colors ${activeTab === 'PROFILES' ? 'border-b-2 border-srm-blue text-srm-blue' : 'text-gray-500 hover:text-gray-700'}`}
+            >
+              Pending Profiles ({pendingProfiles.length})
+            </button>
           </div>
 
-          <div className="rounded-lg overflow-hidden border border-gray-200 shadow-sm bg-white">
-            <table className="srm-table">
-              <thead>
-                <tr>
-                  <th>MoM Number</th>
-                  <th>Scholar</th>
-                  <th>Period</th>
-                  <th>Status</th>
-                  <th className="text-right">Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {loading ? (
-                  <tr><td colSpan={5} className="text-center py-10 text-gray-500">Loading...</td></tr>
-                ) : pending.length === 0 ? (
-                  <tr><td colSpan={5} className="text-center py-10 text-gray-500">No pending MoMs to review.</td></tr>
-                ) : (
-                  pending.map((m) => (
-                    <tr key={m.id} className="hover:bg-gray-50/60 transition-colors">
-                      <td className="font-mono text-xs font-semibold">{m.momNumber}</td>
-                      <td>
-                        <p className="font-semibold text-gray-800">{m.sectionAScholarName || ('Scholar #' + m.scholarId)}</p>
-                        <p className="text-xs text-gray-500">ID: {m.scholarId}</p>
-                      </td>
-                      <td className="text-xs">{m.periodMonth}/{m.periodYear}</td>
-                      <td><span className={`srm-badge ${statusClass(m.currentStatus)}`}>{m.currentStatus.replace(/_/g, ' ')}</span></td>
-                      <td className="text-right whitespace-nowrap">
-                        <ViewButton onClick={() => openMom(m.id)} label="Review" />
-                        
+          {activeTab === 'PROFILES' && (
+            <div className="rounded-lg overflow-hidden border border-gray-200 shadow-sm bg-white">
+              <table className="srm-table">
+                <thead>
+                  <tr>
+                    <th>Scholar Name</th>
+                    <th>Registration ID</th>
+                    <th>Tentative Topic</th>
+                    <th className="text-right">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {loading ? (
+                    <tr><td colSpan={4} className="text-center py-10 text-gray-500">Loading...</td></tr>
+                  ) : pendingProfiles.length === 0 ? (
+                    <tr><td colSpan={4} className="text-center py-10 text-gray-500">No pending profiles to approve.</td></tr>
+                  ) : pendingProfiles.map((p) => (
+                    <tr key={p.id} className="hover:bg-gray-50/60 transition-colors">
+                      <td className="font-semibold text-gray-800">{p.scholarFullName || 'Scholar'}</td>
+                      <td className="text-sm">{p.universityRegId || 'N/A'}</td>
+                      <td className="text-sm truncate max-w-xs">{p.tentativeTopic || 'N/A'}</td>
+                      <td className="text-right">
                         <button 
-                          onClick={() => {
-                            setMessageTarget({ id: m.scholarId, name: m.sectionAScholarName || 'Scholar' });
-                            setShowMessageModal(true);
+                          onClick={async () => {
+                            if(confirm('Approve this scholar profile?')) {
+                              await approveScholarProfile(p.id);
+                              alert('Profile Approved!');
+                              load();
+                            }
                           }} 
-                          className="text-blue-600 hover:text-blue-800 text-xs font-bold uppercase tracking-wide ml-4 px-3 py-1.5 rounded bg-blue-50 border border-blue-100 hover:bg-blue-100 transition-colors"
+                          className="bg-green-600 hover:bg-green-700 text-white px-4 py-1.5 rounded-lg text-xs font-bold transition-colors"
                         >
-                          Message
+                          Approve Profile
                         </button>
                       </td>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {activeTab === 'MOMS' && (
+            <div className="rounded-lg overflow-hidden border border-gray-200 shadow-sm bg-white">
+              <table className="srm-table">
+                <thead>
+                  <tr>
+                    <th>MoM Number</th>
+                    <th>Scholar</th>
+                    <th>Period</th>
+                    <th>Status</th>
+                    <th className="text-right">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {loading ? (
+                    <tr><td colSpan={5} className="text-center py-10 text-gray-500">Loading...</td></tr>
+                  ) : pending.length === 0 ? (
+                    <tr><td colSpan={5} className="text-center py-10 text-gray-500">No pending MoMs to review.</td></tr>
+                  ) : (
+                    pending.map((m) => (
+                      <tr key={m.id} className="hover:bg-gray-50/60 transition-colors">
+                        <td className="font-mono text-xs font-semibold">{m.momNumber}</td>
+                        <td>
+                          <p className="font-semibold text-gray-800">{m.sectionAScholarName || ('Scholar #' + m.scholarId)}</p>
+                          <p className="text-xs text-gray-500">ID: {m.scholarId}</p>
+                        </td>
+                        <td className="text-xs">{m.periodMonth}/{m.periodYear}</td>
+                        <td><span className={`srm-badge ${statusClass(m.currentStatus)}`}>{m.currentStatus.replace(/_/g, ' ')}</span></td>
+                        <td className="text-right whitespace-nowrap">
+                          <ViewButton onClick={() => openMom(m.id)} label="Review" />
+                          
+                          <button 
+                            onClick={() => {
+                              setMessageTarget({ id: m.scholarId, name: m.sectionAScholarName || 'Scholar' });
+                              setShowMessageModal(true);
+                            }} 
+                            className="text-blue-600 hover:text-blue-800 text-xs font-bold uppercase tracking-wide ml-4 px-3 py-1.5 rounded bg-blue-50 border border-blue-100 hover:bg-blue-100 transition-colors"
+                          >
+                            Message
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
         </>
       ) : (
         <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm w-full">
@@ -150,7 +212,6 @@ export default function SupervisorDashboard() {
         </div>
       )}
 
-      {/* MESSAGE MODAL */}
       {showMessageModal && messageTarget && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-lg">

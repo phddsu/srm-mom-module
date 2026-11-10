@@ -124,6 +124,7 @@ public class AdminUserController {
                         .fullName(fullName)
                         .department("PhD Scholar")
                         .role(Role.SCHOLAR)
+                        .requiresPasswordChange(true)
                         .active(true)
                         .passwordHash(passwordEncoder.encode(defaultPassword))
                         .build();

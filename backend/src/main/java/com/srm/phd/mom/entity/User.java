@@ -65,4 +65,9 @@ public class User {
 
     @PreUpdate
     protected void onUpdate() { updatedAt = LocalDateTime.now(); }
+    @Column(name = "requires_password_change")
+    private Boolean requiresPasswordChange = false;
+
+    public Boolean getRequiresPasswordChange() { return requiresPasswordChange; }
+    public void setRequiresPasswordChange(Boolean requiresPasswordChange) { this.requiresPasswordChange = requiresPasswordChange; }
 }
