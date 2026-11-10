@@ -22,3 +22,6 @@ Thumbs.db
 
 # Uploads (Don't commit user images to Git)
 backend/uploads/
+# Backups & Cache
+*.bak*
+*.tsbuildinfo
